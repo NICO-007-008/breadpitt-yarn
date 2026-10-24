@@ -1,0 +1,90 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/dashboard" text=""></ion-back-button>
+    </ion-buttons>
+    <ion-title>Create account</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="page-content" [scrollY]="true">
+  <main class="bk-auth">
+
+    <header class="bk-auth__brand">
+      <img class="bk-auth__logo" src="/logo.jpg" alt="Knead to Know" (error)="$any($event.target).style.display='none'" />
+      <h1>Join Knead to Know</h1>
+      <p>Create an account to order, save your details and follow your delivery.</p>
+    </header>
+
+    @if (errorMessage(); as error) {
+      <p class="bk-alert" role="alert">{{ error }}</p>
+    }
+
+    @if (needEmailConfirmation()) {
+      <p class="bk-alert bk-alert--ok" role="status">
+        Almost there. Check your inbox for a confirmation link, then sign in.
+      </p>
+    }
+
+    <ion-input
+      class="bk-field"
+      type="text"
+      autocomplete="name"
+      label="Name (optional)"
+      label-placement="floating"
+      fill="outline"
+      [value]="displayName()"
+      (ionInput)="displayName.set(($event.detail.value ?? '').toString())"
+    ></ion-input>
+
+    <ion-input
+      class="bk-field"
+      type="email"
+      inputmode="email"
+      autocomplete="email"
+      label="Email"
+      label-placement="floating"
+      fill="outline"
+      [value]="email()"
+      (ionInput)="email.set(($event.detail.value ?? '').toString())"
+    ></ion-input>
+
+    <ion-input
+      class="bk-field"
+      type="password"
+      autocomplete="new-password"
+      label="Password"
+      label-placement="floating"
+      fill="outline"
+      helper-text="At least 6 characters"
+      [value]="password()"
+      (ionInput)="password.set(($event.detail.value ?? '').toString())"
+    ></ion-input>
+
+    <ion-input
+      class="bk-field"
+      type="password"
+      autocomplete="new-password"
+      enterkeyhint="go"
+      label="Confirm password"
+      label-placement="floating"
+      fill="outline"
+      [value]="confirmPassword()"
+      (ionInput)="confirmPassword.set(($event.detail.value ?? '').toString())"
+      (keyup.enter)="handleSubmit()"
+    ></ion-input>
+
+    <button type="button" class="bk-btn bk-btn--dark bk-btn--block" [disabled]="submitting()" (click)="handleSubmit()">
+      {{ submitting() ? 'Creating account…' : 'Create account' }}
+    </button>
+
+    <p class="bk-auth__alt">
+      Already have an account? <a routerLink="/login" [queryParams]="returnUrl ? { returnUrl: returnUrl } : null">Sign in</a>
+    </p>
+
+    <p class="bk-auth__alt">
+      <a routerLink="/bread-catalog">Continue browsing without an account</a>
+    </p>
+
+  </main>
+</ion-content>

@@ -1,0 +1,94 @@
+<!-- Cart bar: only appears once something is in the cart -->
+@if (!isHidden() && itemCount() > 0) {
+  <button
+    type="button"
+    class="bk-cartbar"
+    [class.bump]="bumpTrigger() > 0"
+    (animationend)="bumpTrigger.set(0)"
+    (click)="onFabClick()"
+    aria-label="Open cart, {{ itemCount() }} items, {{ formatPrice(subtotal()) }}"
+  >
+    <span class="bk-cartbar__count">{{ itemCount() > 99 ? '99+' : itemCount() }}</span>
+    <span class="bk-cartbar__label">View cart</span>
+    <span class="bk-cartbar__total">{{ formatPrice(subtotal()) }}</span>
+  </button>
+}
+
+<!-- Cart sheet: header and footer stay put, only the item list scrolls -->
+@if (isOpen() && !isHidden()) {
+  <div class="cs-backdrop" (click)="onPopoverDismiss()"></div>
+
+  <section class="cs" role="dialog" aria-modal="true" aria-label="Your cart">
+    <span class="cs__grab" aria-hidden="true"></span>
+
+    <header class="cs__head">
+      <h2 class="cs__title">
+        Your cart
+        @if (itemCount() > 0) {
+          <small>{{ itemCount() }} item{{ itemCount() === 1 ? '' : 's' }}</small>
+        }
+      </h2>
+      <button type="button" class="cs__close" (click)="onPopoverDismiss()" aria-label="Close cart">
+        <ion-icon [icon]="closeIcon" aria-hidden="true"></ion-icon>
+      </button>
+    </header>
+
+    @if (lines().length === 0) {
+      <div class="cs__empty">
+        <ion-icon [icon]="cartIcon" aria-hidden="true"></ion-icon>
+        <h3>Your cart is empty</h3>
+        <p>Add some fresh bakes and they will show up here.</p>
+        <button type="button" class="bk-btn bk-btn--dark" (click)="browseCatalog()">Browse the shop</button>
+      </div>
+    } @else {
+      <ul class="cs__list">
+        @for (line of lines(); track line.product.id) {
+          <li class="cs__item">
+            <div class="cs__img">
+              @if (line.product.image_url) {
+                <img [src]="line.product.image_url" alt="" loading="lazy" (error)="onImageError($event)" />
+              } @else {
+                <img class="cs__img--fallback" src="logo.jpg" alt="" />
+              }
+            </div>
+
+            <div class="cs__info">
+              <p class="cs__name">{{ line.product.name }}</p>
+              <p class="cs__unit">{{ formatPrice(line.product.price) }} each</p>
+              <div class="bk-stepper bk-stepper--sm" role="group" [attr.aria-label]="'Quantity of ' + line.product.name">
+                <button type="button" (click)="decrement(line.product.id)" [disabled]="line.quantity <= 1" aria-label="Decrease quantity">
+                  <ion-icon [icon]="removeIcon" aria-hidden="true"></ion-icon>
+                </button>
+                <span aria-live="polite">{{ line.quantity }}</span>
+                <button type="button" (click)="increment(line.product.id)" [disabled]="line.quantity >= (line.product.stock_quantity || 0)" aria-label="Increase quantity">
+                  <ion-icon [icon]="addIcon" aria-hidden="true"></ion-icon>
+                </button>
+              </div>
+            </div>
+
+            <div class="cs__side">
+              <span class="cs__line-total">{{ formatPrice(line.product.price * line.quantity) }}</span>
+              <button type="button" class="cs__remove" (click)="remove(line.product.id)" [attr.aria-label]="'Remove ' + line.product.name + ' from cart'">
+                <ion-icon [icon]="trashIcon" aria-hidden="true"></ion-icon>
+              </button>
+            </div>
+          </li>
+        }
+      </ul>
+
+      <footer class="cs__foot">
+        <dl class="cs__totals">
+          <div><dt>Subtotal</dt><dd>{{ formatPrice(subtotal()) }}</dd></div>
+          <div><dt>Delivery</dt><dd [class.is-free]="deliveryFee() === 0">{{ deliveryFee() === 0 ? 'Free' : formatPrice(deliveryFee()) }}</dd></div>
+          <div><dt>Tax (12%)</dt><dd>{{ formatPrice(tax()) }}</dd></div>
+          <div class="cs__grand"><dt>Total</dt><dd>{{ formatPrice(total()) }}</dd></div>
+        </dl>
+
+        <div class="cs__actions">
+          <button type="button" class="bk-btn bk-btn--outline" (click)="goToCart()">View cart</button>
+          <button type="button" class="bk-btn bk-btn--dark" (click)="goToCheckout()" [disabled]="itemCount() === 0">Checkout</button>
+        </div>
+      </footer>
+    }
+  </section>
+}

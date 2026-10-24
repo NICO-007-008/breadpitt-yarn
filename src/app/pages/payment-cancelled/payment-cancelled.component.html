@@ -1,0 +1,45 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Payment cancelled</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="page-content" [scrollY]="true">
+  <div class="bk-wrap" style="max-width: 480px; text-align: center; padding-top: 40px">
+
+    <div class="bk-result" style="border-color: var(--bakery-error); color: var(--bakery-error)">
+      <ion-icon [icon]="closeCircle" aria-hidden="true"></ion-icon>
+    </div>
+
+    <h1 class="bk-result__title">Payment cancelled</h1>
+    @switch (outcome()) {
+      @case ('paid') {
+        <p class="bk-result__msg">Good news: your payment actually went through, so your order is confirmed. You can follow it in My orders.</p>
+      }
+      @case ('released') {
+        <p class="bk-result__msg">No charges were made. We cancelled the unpaid order and released your items. Your cart is still saved, so you can try again.</p>
+      }
+      @case ('working') {
+        <p class="bk-result__msg">Checking your order…</p>
+      }
+      @default {
+        <p class="bk-result__msg">No charges were made. Your cart is still saved, so you can try again.</p>
+      }
+    }
+
+    @if (orderId(); as id) {
+      <section class="bk-card" style="text-align: left">
+        <div class="bk-kv"><span>Order reference</span><span>{{ id.replace(/-/g, '').slice(0, 10).toUpperCase() }}</span></div>
+      </section>
+    }
+
+    <div class="bk-form" style="margin-top: 20px">
+      @if (outcome() !== 'paid') {
+        <a class="bk-btn bk-btn--dark bk-btn--block" routerLink="/checkout">Try again</a>
+      }
+      <a class="bk-btn bk-btn--outline bk-btn--block" routerLink="/orders">View my orders</a>
+      <a class="bk-linkbtn" routerLink="/bread-catalog" style="display: block; text-align: center; padding-top: 12px">Continue shopping</a>
+    </div>
+
+  </div>
+</ion-content>

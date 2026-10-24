@@ -1,0 +1,79 @@
+<div class="bk-sheet-backdrop" (click)="dismiss.emit()"></div>
+
+<div class="bk-sheet" role="dialog" aria-modal="true" [attr.aria-label]="product().name">
+  <div class="bk-sheet__media">
+    <span class="bk-sheet__grab" aria-hidden="true"></span>
+    @if (product().image_url) {
+      <img [src]="product().image_url" alt="" (error)="onImageError($event)" />
+    } @else {
+      <img class="bk-sheet__fallback" src="logo.jpg" alt="" />
+    }
+    <button type="button" class="bk-sheet__close" (click)="dismiss.emit()" aria-label="Close">
+      <ion-icon [icon]="closeIcon" aria-hidden="true"></ion-icon>
+    </button>
+  </div>
+
+  <div class="bk-sheet__scroll">
+    <p class="bk-sheet__cat">{{ product().category }}</p>
+    <h2 class="bk-sheet__name">{{ product().name }}</h2>
+
+    <div class="bk-sheet__row">
+      <span class="bk-sheet__price">{{ unitPrice() }}</span>
+      @if (rating() > 0) {
+        <span class="bk-sheet__rating">
+          <ion-icon [icon]="starIcon" aria-hidden="true"></ion-icon>{{ rating().toFixed(1) }}
+        </span>
+      }
+      @if (lowStock()) {
+        <span class="bk-sheet__flag">Only {{ maxQty() }} left</span>
+      }
+    </div>
+
+    @if (product().description) {
+      <p class="bk-sheet__desc">{{ product().description }}</p>
+    }
+
+    @if (product().ingredients) {
+      <section class="bk-sheet__sec">
+        <h3>Ingredients</h3>
+        <p>{{ product().ingredients }}</p>
+      </section>
+    }
+
+    @if (product().nutritional_value) {
+      <section class="bk-sheet__sec">
+        <h3>Nutritional value</h3>
+        <p>{{ product().nutritional_value }}</p>
+      </section>
+    }
+
+    @for (item of product().extra_info; track item.id) {
+      @if (item.label || item.value) {
+        <section class="bk-sheet__sec">
+          @if (item.label) { <h3>{{ item.label }}</h3> }
+          @if (item.value) { <p>{{ item.value }}</p> }
+        </section>
+      }
+    }
+  </div>
+
+  <footer class="bk-sheet__foot">
+    @if (!soldOut()) {
+      <div class="bk-stepper" role="group" aria-label="Quantity">
+        <button type="button" (click)="decrease()" [disabled]="qty() <= 1" aria-label="Decrease quantity">
+          <ion-icon [icon]="removeIcon" aria-hidden="true"></ion-icon>
+        </button>
+        <span aria-live="polite">{{ qty() }}</span>
+        <button type="button" (click)="increase()" [disabled]="qty() >= maxQty()" aria-label="Increase quantity">
+          <ion-icon [icon]="addIcon" aria-hidden="true"></ion-icon>
+        </button>
+      </div>
+      <button type="button" class="bk-btn bk-btn--dark bk-sheet__add" [disabled]="adding()" (click)="addToCart()">
+        <span>{{ adding() ? 'Adding…' : 'Add to cart' }}</span>
+        <span>{{ lineTotal() }}</span>
+      </button>
+    } @else {
+      <button type="button" class="bk-btn bk-btn--soft bk-btn--block" disabled>Sold out</button>
+    }
+  </footer>
+</div>

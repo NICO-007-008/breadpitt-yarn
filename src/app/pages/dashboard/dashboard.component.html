@@ -1,0 +1,152 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-menu-button slot="start" aria-label="Open menu"></ion-menu-button>
+    <ion-title>Knead to Know</ion-title>
+    <ion-buttons slot="end">
+      <ion-button class="bk-bell" routerLink="/notifications" [attr.aria-label]="unreadCount() > 0 ? 'Notifications, ' + unreadCount() + ' unread' : 'Notifications'">
+        <ion-icon slot="icon-only" [icon]="bellIcon" aria-hidden="true"></ion-icon>
+        @if (unreadCount() > 0) { <span class="bk-bell__dot">{{ unreadCount() > 9 ? '9+' : unreadCount() }}</span> }
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="page-content" [scrollY]="true">
+  <ion-refresher slot="fixed" (ionRefresh)="refresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <div class="bk-wrap">
+
+    <header class="bk-home-head">
+      <h1>{{ greeting }}{{ firstName() ? ', ' + firstName() : '' }}</h1>
+      <p>What are you craving today?</p>
+    </header>
+
+    <a class="bk-searchpill" routerLink="/bread-catalog">
+      <ion-icon [icon]="searchIcon" aria-hidden="true"></ion-icon>
+      <span>Search breads, cakes, pastries</span>
+    </a>
+
+    @if (errorMessage(); as err) {
+      <section class="bk-state">
+        <h3>We couldn't load the menu</h3>
+        <p>{{ err }}</p>
+        <button type="button" class="bk-btn bk-btn--dark" (click)="loadProducts()">Try again</button>
+      </section>
+    } @else if (loading()) {
+      <div class="bk-skel bk-skel--feature"></div>
+      <div class="bk-sec-head"><h2>Shop by category</h2></div>
+      <div class="bk-rail">
+        @for (i of [1, 2, 3, 4]; track i) { <div class="bk-skel bk-skel--tile"></div> }
+      </div>
+    } @else if (products().length === 0) {
+      <section class="bk-state">
+        <h3>Today's bakes are on their way</h3>
+        <p>Our bakers are still setting up the menu. Check back in a little while.</p>
+      </section>
+    } @else {
+
+      <!-- Featured: best-rated item in stock -->
+      @if (featured(); as f) {
+        <article class="bk-feature">
+          @if (f.image_url) {
+            <img class="bk-feature__img" [src]="f.image_url" alt="" (error)="onImageError($event)" />
+          }
+          <span class="bk-feature__tag">Today's pick</span>
+
+          <div class="bk-feature__body">
+            <div>
+              <h2 class="bk-feature__name">{{ f.name }}</h2>
+              <p class="bk-feature__meta">
+                <span>{{ f.category }}</span>
+                @if (ratingOf(f) > 0) { <span>{{ ratingOf(f).toFixed(1) }} rating</span> }
+              </p>
+            </div>
+            <button
+              type="button"
+              class="bk-btn bk-btn--gold bk-feature__cta"
+              (click)="addFeatured(f)"
+              [attr.aria-label]="'Add ' + f.name + ' to cart for ' + formatPrice(f.price)"
+            >
+              {{ featuredAdded() ? 'Added' : 'Add ' + formatPrice(f.price) }}
+            </button>
+          </div>
+
+          <button
+            type="button"
+            class="bk-feature__hit"
+            (click)="openDetail(f)"
+            [attr.aria-label]="'View details for ' + f.name"
+          ></button>
+        </article>
+      }
+
+      @if (categoryTiles().length > 1) {
+        <div class="bk-sec-head">
+          <h2>Shop by category</h2>
+        </div>
+        <div class="bk-rail">
+          @for (cat of categoryTiles(); track cat.label) {
+            <a class="bk-tile" routerLink="/bread-catalog" [queryParams]="{ category: cat.label }">
+              <span class="bk-tile__img">
+                @if (cat.img) {
+                  <img [src]="cat.img" alt="" loading="lazy" (error)="onImageError($event)" />
+                } @else {
+                  <ion-icon [icon]="fallbackIcon" aria-hidden="true"></ion-icon>
+                }
+              </span>
+              <span class="bk-tile__label">{{ cat.label }}</span>
+            </a>
+          }
+        </div>
+      }
+
+      @if (popular().length > 0) {
+        <div class="bk-sec-head">
+          <h2>Popular right now</h2>
+          <a routerLink="/bread-catalog">See all</a>
+        </div>
+        <div class="bk-rail">
+          @for (p of popular(); track p.id) {
+            <app-product-card [product]="p" [rail]="true" (view)="openDetail($event)"></app-product-card>
+          }
+        </div>
+      }
+    }
+
+    <section class="bk-occasion">
+      <div>
+        <h2>Planning a celebration?</h2>
+        <p>We take custom orders for any occasion. Tell us what you have in mind.</p>
+      </div>
+      <a class="bk-btn bk-btn--gold" routerLink="/custom-order">Start a custom order</a>
+    </section>
+
+    <section class="bk-news">
+      <h3>New bakes and offers</h3>
+      <p>Get them in your inbox. No spam, just bread.</p>
+      <div class="bk-news__row">
+        <input
+          class="bk-input"
+          type="email"
+          inputmode="email"
+          autocomplete="email"
+          placeholder="Email address"
+          aria-label="Email address"
+          [value]="email()"
+          (input)="email.set($any($event.target).value)"
+          (keyup.enter)="handleSubscribe()"
+        />
+        <button type="button" class="bk-btn bk-btn--dark" (click)="handleSubscribe()" [disabled]="subscribed()">
+          {{ subscribed() ? 'Subscribed' : 'Subscribe' }}
+        </button>
+      </div>
+    </section>
+
+  </div>
+</ion-content>
+
+@if (selectedProduct(); as product) {
+  <app-product-detail-modal [product]="product" (dismiss)="closeDetail()"></app-product-detail-modal>
+}

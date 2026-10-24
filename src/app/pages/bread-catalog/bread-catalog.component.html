@@ -1,0 +1,164 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-menu-button slot="start" aria-label="Open menu"></ion-menu-button>
+    <ion-title>Shop</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="page-content" [scrollY]="true">
+  <ion-refresher slot="fixed" (ionRefresh)="refresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <div class="bk-wrap">
+
+    <!-- Search + filters + categories stay pinned while the grid scrolls -->
+    <div class="bk-toolbar">
+      <div class="bk-search">
+        <div class="bk-search__field">
+          <ion-icon [icon]="searchIcon" aria-hidden="true"></ion-icon>
+          <input
+            type="search"
+            placeholder="Search the menu"
+            aria-label="Search breads, cakes, pastries"
+            autocomplete="off"
+            enterkeyhint="search"
+            [value]="searchQuery()"
+            (input)="searchQuery.set($any($event.target).value)"
+          />
+          @if (searchQuery().trim().length > 0) {
+            <button type="button" class="bk-search__clear" (click)="searchQuery.set('')" aria-label="Clear search">
+              <ion-icon [icon]="clearIcon" aria-hidden="true"></ion-icon>
+            </button>
+          }
+        </div>
+
+        <button
+          type="button"
+          class="bk-iconbtn"
+          [class.is-on]="filtersOpen()"
+          (click)="filtersOpen.set(!filtersOpen())"
+          [attr.aria-expanded]="filtersOpen()"
+          aria-label="Filter and sort"
+        >
+          <ion-icon [icon]="optionsIcon" aria-hidden="true"></ion-icon>
+          @if (hasActiveFilters() && !filtersOpen()) { <span class="bk-iconbtn__dot"></span> }
+        </button>
+      </div>
+
+      @if (filtersOpen()) {
+        <div class="bk-panel">
+          <div>
+            <h3>Price range (₱)</h3>
+            <div class="bk-panel__range">
+              <input
+                type="number"
+                inputmode="numeric"
+                min="0"
+                placeholder="Min"
+                aria-label="Minimum price"
+                [value]="priceMin() ?? ''"
+                (input)="setPriceMin($any($event.target).value)"
+              />
+              <span aria-hidden="true">to</span>
+              <input
+                type="number"
+                inputmode="numeric"
+                min="0"
+                placeholder="Max"
+                aria-label="Maximum price"
+                [value]="priceMax() ?? ''"
+                (input)="setPriceMax($any($event.target).value)"
+              />
+            </div>
+            @if (maxProductPrice() > 0) {
+              <p class="bk-panel__hint">Our items go up to {{ formatPrice(maxProductPrice()) }}.</p>
+            }
+          </div>
+
+          <div>
+            <h3>Sort by</h3>
+            <div class="bk-panel__chips">
+              @for (opt of sortOptions; track opt.key) {
+                <button
+                  type="button"
+                  class="bk-chip"
+                  [class.is-active]="sortKey() === opt.key"
+                  (click)="sortKey.set(opt.key)"
+                >
+                  {{ opt.label }}
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
+      <div class="bk-chips" role="tablist" aria-label="Categories">
+        @for (f of filters(); track f) {
+          <button
+            type="button"
+            role="tab"
+            class="bk-chip"
+            [class.is-active]="active() === f"
+            [attr.aria-selected]="active() === f"
+            (click)="active.set(f)"
+          >
+            {{ f }}
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (errorMessage(); as err) {
+      <section class="bk-state">
+        <h3>We couldn't load the menu</h3>
+        <p>{{ err }}</p>
+        <button type="button" class="bk-btn bk-btn--dark" (click)="loadProducts()">Try again</button>
+      </section>
+    } @else if (loading()) {
+      <div class="bk-grid bk-grid--spaced">
+        @for (i of [1, 2, 3, 4, 5, 6]; track i) { <div class="bk-skel bk-skel--grid"></div> }
+      </div>
+    } @else if (visible().length === 0) {
+      <section class="bk-state">
+        <h3>Nothing matches that</h3>
+        <p>Try a different word, or clear your filters to see everything we bake.</p>
+        <button type="button" class="bk-btn bk-btn--dark" (click)="clearAllFilters()">Clear filters</button>
+      </section>
+    } @else {
+
+      @if (isFiltered()) {
+        <div class="bk-summary">
+          <span><strong>{{ visible().length }}</strong> {{ visible().length === 1 ? 'item' : 'items' }}</span>
+          <button type="button" (click)="clearAllFilters()">Clear all</button>
+        </div>
+      }
+
+      @for (group of groupedProducts(); track group.category) {
+        <div class="bk-group-head">
+          <h2>{{ group.category }}</h2>
+          <span>{{ group.items.length }} {{ group.items.length === 1 ? 'item' : 'items' }}</span>
+        </div>
+        <div class="bk-grid">
+          @for (product of group.items; track product.id) {
+            <app-product-card [product]="product" (view)="openDetail($event)"></app-product-card>
+          }
+        </div>
+      }
+    }
+
+    <section class="bk-occasion">
+      <div>
+        <h2>Can't find what you want?</h2>
+        <p>We take custom orders for any occasion.</p>
+      </div>
+      <a class="bk-btn bk-btn--gold" routerLink="/custom-order">Custom order</a>
+    </section>
+
+  </div>
+</ion-content>
+
+@if (selectedProduct(); as product) {
+  <app-product-detail-modal [product]="product" (dismiss)="closeDetail()"></app-product-detail-modal>
+}

@@ -1,0 +1,118 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-menu-button slot="start" aria-label="Open menu"></ion-menu-button>
+    <ion-title>Reviews</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="page-content" [scrollY]="true">
+  <div class="bk-wrap">
+
+    <header class="bk-page-head">
+      <h1>What customers say</h1>
+      <p>Real ratings from real orders. Pick something you've tried, rate it and share how it was.</p>
+    </header>
+
+    @if (errorMessage(); as err) {
+      <div class="bk-empty">
+        <h3>We couldn't load reviews</h3>
+        <p>{{ err }}</p>
+        <button type="button" class="bk-btn bk-btn--dark" (click)="load()">Try again</button>
+      </div>
+    } @else if (loading()) {
+      <div class="bk-empty"><div class="bk-spinner"></div><p>Loading reviews…</p></div>
+    } @else {
+
+      <div class="bk-feedback-top">
+        <!-- Summary -->
+        <section class="bk-card">
+          <div class="bk-row" style="align-items: baseline; gap: 10px">
+            <span class="bk-bigrate">{{ avgRating().toFixed(1) }}</span>
+            <span class="bk-stars" [attr.aria-label]="avgRating().toFixed(1) + ' out of 5'">{{ starsString(avgRating()) }}</span>
+          </div>
+          <p class="bk-muted" style="margin: 0 0 14px">Based on {{ totalReviews() }} {{ totalReviews() === 1 ? 'review' : 'reviews' }}</p>
+          @for (r of ratingSummary(); track r.stars) {
+            <div class="bk-bar">
+              <span>{{ r.stars }} ★</span>
+              <div class="bk-bar__track"><div class="bk-bar__fill" [style.width.%]="ratingPct(r)"></div></div>
+              <span>{{ r.count }}</span>
+            </div>
+          }
+        </section>
+
+        <!-- Write a review -->
+        <section class="bk-card">
+          <h2>Leave a review</h2>
+
+          @if (!user()) {
+            <p class="bk-alert">Please <a routerLink="/login" class="bk-linkbtn">log in</a> to share your review.</p>
+          }
+
+          <div class="bk-form">
+            <div class="bk-fieldset">
+              <label class="bk-label" for="fb-product">Product</label>
+              <select id="fb-product" class="bk-select" [value]="productId()" (change)="productId.set($any($event.target).value)">
+                @for (p of products(); track p.id) {
+                  <option [value]="p.id">{{ p.name }} ({{ formatPrice(p.price) }})</option>
+                }
+              </select>
+            </div>
+
+            <div class="bk-fieldset">
+              <span class="bk-label">Rating</span>
+              <div class="bk-rate" role="radiogroup" aria-label="Rating">
+                @for (star of [1, 2, 3, 4, 5]; track star) {
+                  <button type="button" role="radio" [attr.aria-checked]="selected() === star" [attr.aria-label]="star + ' star'"
+                          (mouseenter)="hovered.set(star)" (mouseleave)="hovered.set(0)" (click)="selected.set(star)"
+                          [class.is-on]="star <= (hovered() || selected())">
+                    {{ star <= (hovered() || selected()) ? '★' : '☆' }}
+                  </button>
+                }
+              </div>
+              <p class="bk-hint" style="min-height: 22px">@if (selected() > 0) { {{ selected() }} of 5, {{ starLabel[selected()] }} }</p>
+            </div>
+
+            <div class="bk-fieldset">
+              <label class="bk-label" for="fb-comment">Your review</label>
+              <textarea id="fb-comment" class="bk-textarea" rows="4" placeholder="How was it? Crumb, flavor, delivery…"
+                        [value]="comment()" (input)="comment.set($any($event.target).value)"></textarea>
+            </div>
+
+            @if (formError(); as err) { <p class="bk-alert" role="alert" style="margin: 0">{{ err }}</p> }
+            @if (formMessage(); as msg) { <p class="bk-alert bk-alert--ok" role="status" style="margin: 0">{{ msg }}</p> }
+
+            <button type="button" class="bk-btn bk-btn--dark bk-btn--block" [disabled]="submitting()" (click)="handleSubmit()">
+              {{ submitting() ? 'Publishing…' : 'Post review' }}
+            </button>
+          </div>
+        </section>
+      </div>
+
+      <!-- Review list -->
+      @if (totalReviews() === 0) {
+        <div class="bk-empty">
+          <h3>No reviews yet</h3>
+          <p>Be the first to review one of our bakes.</p>
+        </div>
+      } @else {
+        @for (review of reviews(); track review.id) {
+          <article class="bk-card">
+            <div class="bk-row" style="flex-wrap: nowrap; align-items: flex-start">
+              <div class="bk-avatar" style="width: 42px; height: 42px; font-size: 1.1rem" aria-hidden="true">{{ (review.author || '?')[0] }}</div>
+              <div style="flex: 1; min-width: 0">
+                <div class="bk-row bk-row--between" style="gap: 8px; flex-wrap: nowrap">
+                  <strong style="color: var(--bakery-dark)">{{ review.author }}</strong>
+                  <span class="bk-stars" [attr.aria-label]="review.rating + ' out of 5'">{{ starsString(review.rating) }}</span>
+                </div>
+                <p class="bk-muted" style="margin: 0; font-size: 0.875rem">
+                  {{ formatDate(review.created_at) }}@if (review.product) { , {{ review.product.name }} }
+                </p>
+                @if (review.comment) { <p style="margin: 8px 0 0; line-height: 1.5">{{ review.comment }}</p> }
+              </div>
+            </div>
+          </article>
+        }
+      }
+    }
+  </div>
+</ion-content>

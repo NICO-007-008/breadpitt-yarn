@@ -1,0 +1,185 @@
+<ion-header class="no-print">
+  <ion-toolbar>
+    <ion-menu-button slot="start" aria-label="Open menu"></ion-menu-button>
+    <ion-title>{{ isStaff() ? 'Fulfillment' : 'Orders & cart' }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="page-content" [scrollY]="true">
+  <div class="bk-wrap">
+
+    <header class="bk-page-head">
+      <h1>{{ isStaff() ? 'Live orders' : 'Your orders' }}</h1>
+      <p>{{ isStaff() ? 'New orders appear here as they come in.' : 'Track what you ordered and check out your cart.' }}</p>
+    </header>
+
+    <div class="bk-stats">
+      @for (s of stats(); track s.label) {
+        <div class="bk-stat">
+          <strong>{{ s.value }}</strong>
+          <span>{{ s.label }}</span>
+        </div>
+      }
+    </div>
+
+    <div class="bk-seg" role="tablist">
+      <button type="button" role="tab" [class.is-active]="tab() === 'orders'" [attr.aria-selected]="tab() === 'orders'" (click)="tab.set('orders')">
+        {{ isStaff() ? 'Fulfillment queue' : 'Order history' }}
+      </button>
+      @if (!isStaff()) {
+        <button type="button" role="tab" [class.is-active]="tab() === 'cart'" [attr.aria-selected]="tab() === 'cart'" (click)="tab.set('cart')">
+          Cart ({{ itemCount() }})
+        </button>
+      }
+    </div>
+
+    <!-- ── Order history / fulfillment queue ───────────────────────────── -->
+    @if (tab() === 'orders') {
+
+      @if (loading()) {
+        <div class="bk-empty"><div class="bk-spinner"></div><p>Loading orders…</p></div>
+      } @else if (errorMessage()) {
+        <div class="bk-empty">
+          <h3>We couldn't load your orders</h3>
+          <p>{{ errorMessage() }}</p>
+          <button type="button" class="bk-btn bk-btn--dark" (click)="loadOrders()">Try again</button>
+        </div>
+      } @else if (orders().length === 0) {
+        <div class="bk-empty">
+          <h3>No orders yet</h3>
+          <p>
+            @if (isStaff()) { Incoming orders will appear here in real time. }
+            @else { When you place an order you can follow its status here. }
+          </p>
+          @if (!isStaff()) {
+            <a class="bk-btn bk-btn--dark" routerLink="/bread-catalog">Browse the menu</a>
+          }
+        </div>
+      } @else {
+
+        @for (order of orders(); track order.id) {
+          <article class="bk-order" [attr.data-no]="shortId(order).slice(0, 4)">
+            <div class="bk-order__head">
+              <div>
+                <p class="bk-order__no">Order #{{ shortId(order) }}</p>
+                <p class="bk-order__meta">
+                  {{ formatDate(order.created_at) }}@if (!isStaff()) { , {{ paymentLabel(order) }} }
+                </p>
+              </div>
+              <span [class]="'status-badge status-badge--' + statusBadge[order.status]">{{ statusLabel[order.status] }}</span>
+            </div>
+
+            @if (isStaff()) {
+              <div class="bk-order__block">
+                <p class="bk-order__label">{{ order.customer_name }}</p>
+                <p class="bk-order__text"><a [href]="'tel:' + order.phone">{{ order.phone }}</a></p>
+              </div>
+            }
+
+            <div class="bk-order__block">
+              <p class="bk-order__label">
+                {{ fulfillmentLabel(order) }},
+                @if (order.scheduled_at) { {{ scheduleLabel(order) }} } @else { as soon as possible }
+              </p>
+              @if (isStaff()) {
+                @if (order.fulfillment_type === 'pickup') {
+                  <p class="bk-order__text">Customer will collect in store.</p>
+                } @else {
+                  <p class="bk-order__text">{{ order.address }}</p>
+                  @if (order.unit_notes) { <p class="bk-order__text">Notes: {{ order.unit_notes }}</p> }
+                  <p class="bk-order__text">
+                    {{ coords(order) }}
+                    @if (mapUrl(order)) { <a [href]="mapUrl(order)" target="_blank" rel="noopener">Open in Google Maps</a> }
+                  </p>
+                }
+              }
+            </div>
+
+            <div class="bk-order__block">
+              @for (item of order.items; track item.id) {
+                <p class="bk-order__item">
+                  <span><b>{{ item.quantity }}×</b> {{ item.name }}</span>
+                  <span>{{ formatPrice(item.price * item.quantity) }}</span>
+                </p>
+              }
+            </div>
+
+            <div class="bk-order__block bk-order__split">
+              <p class="bk-order__text">
+                @if (isStaff()) {
+                  {{ paymentLabel(order) }}, {{ paymentStatusText(order) }}
+                } @else { Total }
+              </p>
+              <p class="bk-order__total">{{ formatPrice(order.total) }}</p>
+            </div>
+
+            @if (isStaff()) {
+              @if (order.status !== 'cancelled' && order.status !== 'delivered') {
+                <div class="bk-order__actions">
+                  <button type="button" class="bk-btn bk-btn--dark" (click)="advanceStatus(order)" [disabled]="!nextStatus(order)">
+                    {{ nextStatus(order) ? 'Mark as ' + statusLabel[nextStatus(order)!] : 'Completed' }}
+                  </button>
+                  <button type="button" class="bk-btn bk-btn--danger" (click)="cancelOrder(order)">Cancel</button>
+                </div>
+              }
+            } @else {
+              <div class="bk-order__actions">
+                <a class="bk-btn bk-btn--dark" [routerLink]="['/order-confirmation', order.id]">View receipt and track</a>
+                @if (canCustomerCancel(order)) {
+                  <button type="button" class="bk-btn bk-btn--danger" (click)="cancelMyOrder(order)">Cancel order</button>
+                } @else if (order.status !== 'cancelled') {
+                  <button type="button" class="bk-btn bk-btn--outline" [disabled]="reordering() === order.id" (click)="reorder(order)">
+                    {{ reordering() === order.id ? 'Adding…' : 'Order again' }}
+                  </button>
+                }
+              </div>
+            }
+          </article>
+        }
+      }
+    }
+
+    <!-- ── Cart (customers) ────────────────────────────────────────────── -->
+    @if (tab() === 'cart' && !isStaff()) {
+
+      @if (lines().length === 0) {
+        <div class="bk-empty">
+          <h3>Your cart is empty</h3>
+          <p>Add some fresh bread, cakes or pastries and they will show up here.</p>
+          <a class="bk-btn bk-btn--dark" routerLink="/bread-catalog">Browse the menu</a>
+        </div>
+      } @else {
+        @for (line of lines(); track line.product.id) {
+          <div class="bk-line">
+            @if (line.product.image_url) {
+              <img class="bk-line__img" [src]="line.product.image_url" alt="" (error)="$any($event.target).style.display='none'" />
+            } @else {
+              <img class="bk-line__img" src="logo.jpg" alt="" />
+            }
+            <div class="bk-line__info">
+              <p class="bk-line__name">{{ line.product.name }}</p>
+              <p class="bk-line__meta">{{ formatPrice(line.product.price) }} each, {{ formatPrice(line.product.price * line.quantity) }} total</p>
+            </div>
+            <div class="bk-stepper bk-stepper--sm" role="group" [attr.aria-label]="'Quantity of ' + line.product.name">
+              <button type="button" (click)="adjustQty(line.product.id, -1)" aria-label="Decrease quantity">−</button>
+              <span>{{ line.quantity }}</span>
+              <button type="button" (click)="adjustQty(line.product.id, 1)" aria-label="Increase quantity">+</button>
+            </div>
+          </div>
+        }
+
+        <section class="bk-card bk-sum">
+          <div class="bk-sum__row"><span>Subtotal ({{ itemCount() }} {{ itemCount() === 1 ? 'item' : 'items' }})</span><span>{{ formatPrice(subtotal()) }}</span></div>
+          <div class="bk-sum__row">
+            <span>Delivery fee</span>
+            @if (deliveryFee() === 0) { <span class="bk-sum__free">Free</span> } @else { <span>{{ formatPrice(deliveryFee()) }}</span> }
+          </div>
+          <div class="bk-sum__row"><span>Tax (12%)</span><span>{{ formatPrice(tax()) }}</span></div>
+          <div class="bk-sum__row bk-sum__row--total"><span>Estimated total</span><span>{{ formatPrice(total()) }}</span></div>
+          <a class="bk-btn bk-btn--dark bk-btn--block" routerLink="/checkout">Proceed to checkout</a>
+        </section>
+      }
+    }
+
+  </div>
+</ion-content>

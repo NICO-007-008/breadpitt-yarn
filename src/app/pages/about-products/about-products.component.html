@@ -1,0 +1,68 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-menu-button slot="start" aria-label="Open menu"></ion-menu-button>
+    <ion-title>Our craft</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="page-content" [scrollY]="true">
+  <div class="bk-wrap">
+
+    <header class="bk-page-head">
+      <h1>Every bake tells a story</h1>
+      <p>No shortcuts, no premixes. Honest ingredients, time-honored techniques and bakers who care.</p>
+    </header>
+
+    <div class="bk-sec-head"><h2>What we bake</h2></div>
+    <div class="bk-cat-grid">
+      @for (cat of categories; track cat.name) {
+        <article class="bk-card bk-cat">
+          <div class="bk-cat__img">
+            <img [src]="cat.image" alt="" loading="lazy" (error)="$any($event.target).style.display='none'" />
+          </div>
+          <div class="bk-cat__body">
+            <h3>{{ cat.name }}</h3>
+            <p>{{ cat.description }}</p>
+            <div class="bk-row" style="gap: 6px">
+              @for (h of cat.highlights; track h) { <span class="bk-tag">{{ h }}</span> }
+            </div>
+          </div>
+        </article>
+      }
+    </div>
+
+    <div class="bk-sec-head"><h2>What goes inside matters</h2></div>
+    <p class="bk-muted" style="margin: -4px 0 14px">We trace every ingredient. Here's why our bakes taste different.</p>
+    <div class="bk-cat-grid">
+      @for (ing of ingredients; track ing.title) {
+        <section class="bk-card" style="margin: 0">
+          <h3>{{ ing.title }}</h3>
+          <p class="bk-muted" style="margin: 0; line-height: 1.55">{{ ing.detail }}</p>
+        </section>
+      }
+    </div>
+
+    <section class="bk-card bk-card--dark" style="margin-top: 28px; padding: 24px">
+      <h2>The Knead to Know standard</h2>
+      <div class="bk-cat-grid" style="margin-top: 14px">
+        <div>
+          <h3>Time-honored process</h3>
+          <p class="bk-id__mail">We never rush fermentation. Our sourdough rests 18+ hours and croissants laminate over 2 days. Flavor takes time.</p>
+        </div>
+        <div>
+          <h3>Baker's hands</h3>
+          <p class="bk-id__mail">Every loaf is folded, scored and loaded by hand. You taste the care.</p>
+        </div>
+        <div>
+          <h3>Fresh daily</h3>
+          <p class="bk-id__mail">What you buy today was baked before dawn. Unsold items are donated, never sold the next day.</p>
+        </div>
+        <div>
+          <h3>Full transparency</h3>
+          <p class="bk-id__mail">Allergens listed and ingredients named. No hidden preservatives or artificial flavors.</p>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</ion-content>

@@ -1,0 +1,87 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-menu-button slot="start" aria-label="Open menu"></ion-menu-button>
+    <ion-title>Contact us</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="page-content" [scrollY]="true">
+  <div class="bk-wrap">
+
+    <header class="bk-page-head">
+      <h1>We'd love to hear from you</h1>
+      <p>Questions about an order, a catering enquiry, or just saying hello. We read every message.</p>
+    </header>
+
+    <!-- Quick channels -->
+    <section class="bk-card" style="margin-top: 14px">
+      @for (c of contactInfo; track c.label) {
+        <div class="bk-kv" style="flex-direction: column; gap: 2px; align-items: flex-start">
+          <span>{{ c.label }}</span>
+          <span style="text-align: left; font-size: 1.0625rem">{{ c.value }}</span>
+          <span style="font-weight: 400; font-size: 0.875rem; color: var(--bakery-text-secondary)">{{ c.detail }}</span>
+        </div>
+      }
+    </section>
+
+    <!-- Locations -->
+    <div class="bk-sec-head"><h2>Visit us</h2></div>
+    @for (loc of locations; track loc.name) {
+      <section class="bk-card">
+        <h3>{{ loc.name }}</h3>
+        <p class="bk-muted" style="margin: 0 0 12px">{{ loc.address }}</p>
+        <p class="bk-row" style="gap: 8px; margin: 0 0 4px"><ion-icon name="time-outline" aria-hidden="true"></ion-icon><span>{{ loc.hours }}</span></p>
+        <p class="bk-row" style="gap: 8px; margin: 0 0 14px">
+          <ion-icon name="call-outline" aria-hidden="true"></ion-icon>
+          <a [href]="'tel:' + loc.phone" style="color: var(--bakery-dark); font-weight: 600">{{ loc.phone }}</a>
+        </p>
+        <button type="button" class="bk-btn bk-btn--outline bk-btn--sm" (click)="openMap(loc.maps)">
+          <ion-icon name="navigate-outline" aria-hidden="true"></ion-icon>Get directions
+        </button>
+      </section>
+    }
+
+    <!-- Message form -->
+    <div class="bk-sec-head"><h2>Send a message</h2></div>
+    <section class="bk-card">
+      <form class="bk-form" (ngSubmit)="submit()">
+        <div class="bk-grid-2">
+          <div class="bk-fieldset">
+            <label class="bk-label" for="c-name">Your name</label>
+            <input id="c-name" class="bk-input--block" type="text" name="name" autocomplete="name" placeholder="Juan Dela Cruz" [(ngModel)]="form.name" />
+          </div>
+          <div class="bk-fieldset">
+            <label class="bk-label" for="c-email">Email</label>
+            <input id="c-email" class="bk-input--block" type="email" name="email" autocomplete="email" placeholder="juan@email.com" [(ngModel)]="form.email" />
+          </div>
+        </div>
+        <div class="bk-grid-2">
+          <div class="bk-fieldset">
+            <label class="bk-label" for="c-phone">Phone <small>Optional</small></label>
+            <input id="c-phone" class="bk-input--block" type="tel" name="phone" autocomplete="tel" placeholder="0917 123 4567" [(ngModel)]="form.phone" />
+          </div>
+          <div class="bk-fieldset">
+            <label class="bk-label" for="c-subject">Subject <small>Optional</small></label>
+            <input id="c-subject" class="bk-input--block" type="text" name="subject" placeholder="Order, catering, feedback" [(ngModel)]="form.subject" />
+          </div>
+        </div>
+        <div class="bk-fieldset">
+          <label class="bk-label" for="c-message">Message</label>
+          <textarea id="c-message" class="bk-textarea" name="message" rows="5" placeholder="Tell us how we can help" [(ngModel)]="form.message"></textarea>
+        </div>
+        <button type="submit" class="bk-btn bk-btn--dark bk-btn--block" [disabled]="submitting()">
+          {{ submitting() ? 'Sending…' : 'Send message' }}
+        </button>
+      </form>
+    </section>
+
+    <!-- Social -->
+    <div class="bk-sec-head"><h2>Follow along</h2></div>
+    <div class="bk-row" style="margin-bottom: 8px">
+      <a class="bk-iconbtn" href="https://facebook.com/kneadtoknow" target="_blank" rel="noopener" aria-label="Facebook"><ion-icon name="logo-facebook" aria-hidden="true"></ion-icon></a>
+      <a class="bk-iconbtn" href="https://instagram.com/kneadtoknow" target="_blank" rel="noopener" aria-label="Instagram"><ion-icon name="logo-instagram" aria-hidden="true"></ion-icon></a>
+      <a class="bk-iconbtn" href="https://tiktok.com/@kneadtoknow" target="_blank" rel="noopener" aria-label="TikTok"><ion-icon name="logo-tiktok" aria-hidden="true"></ion-icon></a>
+    </div>
+
+  </div>
+</ion-content>

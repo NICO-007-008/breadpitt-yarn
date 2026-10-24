@@ -1,0 +1,249 @@
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
+import type { Session } from '@supabase/supabase-js';
+import { DatabaseService } from './database.service';
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+export type AppRole = 'customer' | 'store_admin' | 'admin';
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  displayName: string;
+  role: AppRole;
+  avatarUrl?: string;
+  phone?: string;
+}
+
+const ROLES: AppRole[] = ['customer', 'store_admin', 'admin'];
+
+// ─── Service ─────────────────────────────────────────────────────────────────
+
+@Injectable({ providedIn: 'root' })
+export class AuthService {
+  private readonly db = inject(DatabaseService);
+  private readonly router = inject(Router);
+
+  /** Current signed-in user (null when signed out). */
+  readonly user = signal<AuthUser | null>(null);
+
+  /** Becomes true once the persisted session has been loaded / rejected. */
+  readonly ready = signal(false);
+
+  /** Resolves when the initial session state has been determined. */
+  private readonly readyPromise: Promise<void>;
+  private resolveReady: (() => void) | null = null;
+
+  readonly isAuthenticated = computed(() => this.user() !== null);
+  readonly isAdmin = computed(() => this.user()?.role === 'admin');
+  readonly canManageProducts = computed(() => {
+    const role = this.user()?.role;
+    return role === 'admin' || role === 'store_admin';
+  });
+
+  constructor() {
+    this.readyPromise = new Promise<void>((resolve) => {
+      this.resolveReady = () => {
+        resolve();
+        this.resolveReady = null; // only resolve once
+      };
+    });
+
+    // onAuthStateChange fires an INITIAL_SESSION event immediately on startup
+    // (synchronously from the cached token in localStorage). We rely on that
+    // single event to seed the user signal instead of also calling refresh(),
+    // which would fire a second round-trip and a second syncSession() call.
+    this.db.client.auth.onAuthStateChange((_event, session) => {
+      void this.syncSession(session);
+    });
+  }
+
+  /** Wait until the persisted session has been resolved (used by guards). */
+  waitForSession(): Promise<void> {
+    // Safety valve: if Supabase never responds (offline / misconfigured),
+    // unblock guards after 8 s so the UI doesn't hang indefinitely.
+    const timeout = new Promise<void>((resolve) =>
+      setTimeout(() => {
+        this.user.set(null);
+        this.ready.set(true);
+        this.resolveReady?.();
+        resolve();
+      }, 8000)
+    );
+    return Promise.race([this.readyPromise, timeout]);
+  }
+
+  /** Re-read the currently stored session and refresh the user signal. */
+  async refresh(): Promise<void> {
+    try {
+      const {
+        data: { user },
+      } = await this.db.client.auth.getUser();
+      await this.syncSession(user ? ({ user } as Session) : null);
+    } catch {
+      // Treat a failed session lookup as signed out so the `ready` flag always
+      // resolves and route guards never hang on the auth check.
+      this.user.set(null);
+      this.ready.set(true);
+      this.resolveReady?.();
+    }
+  }
+
+  private async syncSession(session: Session | null): Promise<void> {
+    if (!session?.user) {
+      this.user.set(null);
+      this.ready.set(true);
+      this.resolveReady?.();
+      return;
+    }
+
+    const u = session.user;
+    let role: AppRole = 'customer';
+    let avatarUrl: string | undefined;
+    let phone: string | undefined;
+
+    const [{ data: roleData, error: roleError }, { data: profileData }] = await Promise.all([
+      this.db.client
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', u.id)
+        .maybeSingle(),
+      this.db.client
+        .from('profiles')
+        .select('display_name, avatar_url, phone')
+        .eq('id', u.id)
+        .maybeSingle(),
+    ]);
+
+    if (!roleError && roleData && ROLES.includes(roleData.role as AppRole)) {
+      role = roleData.role as AppRole;
+    }
+
+    if (profileData) {
+      avatarUrl = profileData.avatar_url ?? undefined;
+      phone = profileData.phone ?? undefined;
+    }
+
+    this.user.set({
+      id: u.id,
+      email: u.email ?? '',
+      displayName:
+        typeof u.user_metadata?.['display_name'] === 'string'
+          ? (u.user_metadata['display_name'] as string)
+          : (profileData?.display_name ?? u.email?.split('@')[0] ?? ''),
+      role,
+      avatarUrl,
+      phone,
+    });
+
+    this.ready.set(true);
+    this.resolveReady?.();
+  }
+
+  // ── Authentication ─────────────────────────────────────────────────────────
+
+  async signIn(email: string, password: string): Promise<{ ok: boolean; message?: string }> {
+    const { error } = await this.db.client.auth.signInWithPassword({ email, password });
+    if (error) return { ok: false, message: error.message };
+    await this.refresh();
+    return { ok: true };
+  }
+
+  async signUp(
+    email: string,
+    password: string,
+    displayName: string
+  ): Promise<{ ok: boolean; message?: string; needEmailConfirmation?: boolean }> {
+    const { data, error } = await this.db.client.auth.signUp({
+      email,
+      password,
+      options: { data: { display_name: displayName.trim() || email.split('@')[0] } },
+    });
+    if (error) return { ok: false, message: error.message };
+    // When email confirmation is enabled, no session exists yet.
+    if (!data.session) return { ok: true, needEmailConfirmation: true };
+    await this.refresh();
+    return { ok: true };
+  }
+
+  async signOut(): Promise<void> {
+    try {
+      await this.db.client.auth.signOut();
+    } finally {
+      this.user.set(null);
+      await this.router.navigate(['/login']);
+    }
+  }
+
+  /** Send the signed-in user to the dashboard that matches their role. */
+  async redirectAfterAuth(returnUrl?: string | null): Promise<void> {
+    const u = this.user();
+    if (!u) {
+      await this.router.navigate(['/login']);
+      return;
+    }
+    const isStaff = u.role === 'admin' || u.role === 'store_admin';
+    // Only follow same-app paths ("/orders"), never "//evil.com" or full URLs.
+    const safe = returnUrl && returnUrl.startsWith('/') && !returnUrl.startsWith('//') ? returnUrl : null;
+    const target = isStaff ? '/admin' : safe && !safe.startsWith('/login') && !safe.startsWith('/register') ? safe : '/dashboard';
+    await this.router.navigateByUrl(target);
+  }
+
+  // ── Role management (Super Admin only) ─────────────────────────────────────
+
+  /** List every registered user with their assigned role. */
+  async listUsers(): Promise<AuthUser[]> {
+    const [profilesRes, rolesRes] = await Promise.all([
+      this.db.client.from('profiles').select('id,email,display_name'),
+      this.db.client.from('user_roles').select('user_id,role'),
+    ]);
+    if (profilesRes.error) throw new Error(profilesRes.error.message);
+    if (rolesRes.error) throw new Error(rolesRes.error.message);
+
+    const roleMap = new Map<string, AppRole>(
+      (rolesRes.data ?? []).map((r) => [r.user_id, r.role as AppRole])
+    );
+
+    return (profilesRes.data ?? []).map((p) => ({
+      id: p.id,
+      email: p.email,
+      displayName: p.display_name ?? p.email.split('@')[0],
+      role: roleMap.get(p.id) ?? 'customer',
+    }));
+  }
+
+  /** Reassign a user's role. RLS only permits Admin to do this. */
+  async updateUserRole(userId: string, role: AppRole): Promise<void> {
+    const { error } = await this.db.client.from('user_roles').update({ role }).eq('user_id', userId);
+    if (error) throw new Error(error.message);
+  }
+
+  // ── Profile / account (signed-in user) ────────────────────────────────────
+
+  /**
+   * Updates the signed-in user's display name in both the auth metadata
+   * (drives AuthUser.displayName) and the public profiles row, then refreshes
+   * the cached user signal so the UI reflects the change immediately.
+   */
+  async updateDisplayName(displayName: string): Promise<void> {
+    const name = displayName.trim();
+    if (!name) throw new Error('Display name cannot be empty.');
+
+    const { data: meta, error: metaErr } = await this.db.client.auth.updateUser({
+      data: { display_name: name },
+    });
+    if (metaErr) throw new Error(metaErr.message);
+    if (!meta.user) throw new Error('Could not update your profile.');
+
+    await this.db.client.from('profiles').update({ display_name: name }).eq('id', meta.user.id);
+
+    await this.syncSession({ user: meta.user } as Session);
+  }
+
+  /** Changes the signed-in user's password (session stays valid). */
+  async changePassword(newPassword: string): Promise<void> {
+    const { error } = await this.db.client.auth.updateUser({ password: newPassword });
+    if (error) throw new Error(error.message);
+  }
+}

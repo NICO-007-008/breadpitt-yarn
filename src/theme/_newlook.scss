@@ -1,0 +1,269 @@
+// ═════════════════════════════════════════════════════════════════════════════
+// NEW LOOK (round 5) — loaded last, so it restyles the existing screens.
+// Palette/fonts/radii come from the tokens in _variables.scss; this file only
+// covers what tokens can't: flat header, flat tab bar, colour-block tiles,
+// order tickets and a few type weights. See the design pack for the reference.
+// ═════════════════════════════════════════════════════════════════════════════
+
+:root {
+  --bk-butter:    #F9D977;
+  --bk-wheat:     #F1DCAE;
+  --bk-berry:     #F7C2CC;
+  --bk-blue:      #C5CCFA;
+  --bk-cocoa:     #DDBFA3;
+  --bk-pistachio: #CFE3B4;
+}
+
+// ── Header: flat flour bar, Lora title, round menu button ────────────────────
+ion-header,
+ion-header.header-md {
+  box-shadow: none;
+  &::after { background-image: none; }
+}
+
+ion-header ion-toolbar {
+  --background: var(--bakery-base);
+  --color: var(--bakery-dark);
+  --border-width: 0;
+  --box-shadow: none;
+  --min-height: 60px;
+
+  &::part(native) { background: var(--bakery-base); }
+
+  ion-title {
+    font-family: var(--bakery-font-display);
+    font-weight: 600;
+    font-size: 1.5rem;
+    letter-spacing: -0.01em;
+    color: var(--bakery-dark);
+  }
+
+  ion-menu-button {
+    --background: var(--bakery-card);
+    --border-radius: 50%;
+    --color: var(--bakery-dark);
+    --padding-start: 0;
+    --padding-end: 0;
+    width: 44px;
+    height: 44px;
+    margin-inline: 8px 0;
+    border: 1px solid var(--bakery-card-border);
+    border-radius: 50%;
+    font-size: 22px;
+  }
+
+  ion-back-button {
+    --background: var(--bakery-card);
+    --border-radius: 50%;
+    --color: var(--bakery-dark);
+    --padding-start: 0;
+    --padding-end: 0;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--bakery-card-border);
+    border-radius: 50%;
+  }
+}
+
+// Headings set in Lora read best a little heavier than Young Serif did.
+.bk-home-head h1,
+.bk-sec-head h2,
+.bk-feature__name,
+.bk-occasion h2,
+.bk-news h3,
+.bk-sheet__name,
+.cs__title,
+.cs__empty h3,
+.splash-name { font-weight: 600; }
+
+.bk-home-head h1 { font-size: 2.1rem; }
+.bk-sec-head h2 { font-size: 1.4rem; }
+
+// ── Bottom navigation: flat bar, gold pill behind the active icon ────────────
+.bk-nav {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-width: none;
+  height: calc(var(--bakery-nav-h) + var(--bakery-safe-bottom));
+  margin: 0;
+  padding: 8px 8px var(--bakery-safe-bottom);
+  gap: 0;
+  border-top: 1px solid var(--bakery-card-border);
+  border-radius: 0;
+  background: rgba(251, 249, 244, 0.96);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: none;
+
+  &__tab {
+    gap: 3px;
+    padding-top: 2px;
+    border-radius: 0;
+    color: var(--bakery-text-secondary);
+    font-size: 0.75rem;
+    font-weight: 700;
+
+    &.is-active {
+      background: transparent;
+      color: var(--bakery-dark);
+      box-shadow: none;
+    }
+  }
+
+  &__icon {
+    width: 58px;
+    height: 32px;
+    place-items: center;
+    border-radius: 16px;
+    transition: background-color var(--bakery-dur) var(--bakery-ease);
+  }
+  &__tab.is-active &__icon { background: var(--bakery-navbar); }
+
+  &__badge {
+    top: -2px;
+    right: 2px;
+    box-shadow: 0 0 0 2px var(--bakery-base);
+  }
+  &__dot {
+    top: 2px;
+    right: 12px;
+    box-shadow: 0 0 0 2px var(--bakery-base);
+  }
+  &__tab.is-active &__badge,
+  &__tab.is-active &__dot { box-shadow: 0 0 0 2px var(--bakery-navbar); }
+}
+
+// Cart bar: dark pill with a gold count.
+.bk-cartbar {
+  background: var(--bakery-dark);
+  color: var(--bakery-text-on-dark);
+  box-shadow: 0 14px 28px -12px rgba(38, 23, 14, 0.6);
+
+  &__count { background: var(--bakery-navbar); color: var(--bakery-dark); }
+}
+body.has-bottom-nav .bk-cartbar {
+  bottom: calc(var(--bakery-nav-h) + 14px + var(--bakery-safe-bottom));
+}
+
+// ── Product cards: colour-block tile + plain text underneath ─────────────────
+.bk-pcard {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+
+  &__media {
+    border-radius: 28px;
+    overflow: hidden;
+    background: var(--bk-wheat);
+  }
+  &[data-cat='Pastries'] &__media { background: var(--bk-butter); }
+  &[data-cat='Cakes'] &__media    { background: var(--bk-berry); }
+  &[data-cat='Cookies'] &__media  { background: var(--bk-cocoa); }
+  &[data-cat='Muffins'] &__media  { background: var(--bk-blue); }
+
+  &__body { padding: 10px 2px 0; }
+  &__name { font-size: 1.0625rem; font-weight: 800; }
+  &__rating ion-icon { color: var(--bakery-burnt); }
+  &__price { font-size: 1.0625rem; }
+  &__add { width: 40px; height: 40px; font-size: 20px; }
+
+  &__flag {
+    top: 12px;
+    left: 12px;
+    background: var(--bakery-card);
+    box-shadow: 0 2px 6px rgba(38, 23, 14, 0.12);
+    &--out { background: var(--bakery-dark); color: #fff; }
+  }
+
+  @media (hover: hover) {
+    &:hover { transform: none; box-shadow: none; }
+  }
+}
+
+// ── Home ─────────────────────────────────────────────────────────────────────
+.bk-feature:not(:has(.bk-feature__img)) {
+  background: var(--bk-butter);
+  color: var(--bakery-dark);
+  &::after { display: none; }
+  .bk-feature__name { color: var(--bakery-dark); }
+  .bk-feature__meta { color: var(--bakery-text-secondary); }
+  .bk-feature__tag { background: var(--bakery-dark); color: var(--bakery-text-on-dark); }
+}
+.bk-feature__tag { background: var(--bakery-dark); color: var(--bakery-text-on-dark); }
+.bk-btn--gold { background: var(--bakery-navbar); }
+
+.bk-tile:nth-child(5n + 1) .bk-tile__img { background: var(--bk-wheat); }
+.bk-tile:nth-child(5n + 2) .bk-tile__img { background: var(--bk-butter); }
+.bk-tile:nth-child(5n + 3) .bk-tile__img { background: var(--bk-berry); }
+.bk-tile:nth-child(5n + 4) .bk-tile__img { background: var(--bk-cocoa); }
+.bk-tile:nth-child(5n + 5) .bk-tile__img { background: var(--bk-blue); }
+.bk-tile__label { font-weight: 800; font-size: 0.875rem; }
+
+.bk-occasion {
+  background: var(--bk-pistachio);
+  h2 { color: var(--bakery-dark); }
+  p { color: var(--bakery-dark); opacity: 0.85; }
+}
+
+// ── Buttons: dark primary, cream text ────────────────────────────────────────
+.bk-btn {
+  min-height: 52px;
+  font-weight: 800;
+  &--dark { background: var(--bakery-dark); color: var(--bakery-text-on-dark); &:hover { background: #3a2518; } }
+  &--outline { background: transparent; border: 2px solid var(--bakery-dark); color: var(--bakery-dark); }
+}
+
+// ── Order tickets: gold stub with the order number + perforated edge ─────────
+.bk-order {
+  position: relative;
+  padding: 16px 16px 16px 112px;
+  border-radius: 22px;
+  overflow: visible;
+
+  &::before {
+    content: attr(data-no);
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 92px;
+    display: grid;
+    place-items: center;
+    padding: 0 6px;
+    border-radius: 22px 0 0 22px;
+    background: var(--bakery-navbar);
+    color: var(--bakery-dark);
+    font-family: var(--bakery-font-display);
+    font-weight: 600;
+    font-size: 1.6rem;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+    border-right: 2px dashed rgba(38, 23, 14, 0.35);
+  }
+  // punched notches where the stub meets the body
+  &::after {
+    content: '';
+    position: absolute;
+    top: -11px;
+    left: 81px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--bakery-base);
+    border: 1px solid var(--bakery-card-border);
+    border-top-color: transparent;
+  }
+}
+
+// Staff order table: payment state under the status badge.
+.oo-pay {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--bakery-text-secondary);
+
+  &--ok { color: var(--bakery-status-finished, #2E7D4F); }
+  &--bad { color: var(--bakery-error, #B3261E); }
+}

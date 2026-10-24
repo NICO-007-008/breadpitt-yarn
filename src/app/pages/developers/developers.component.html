@@ -1,0 +1,44 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-menu-button slot="start" aria-label="Open menu"></ion-menu-button>
+    <ion-title>Developers</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="page-content" [scrollY]="true">
+  <div class="bk-wrap">
+
+    <header class="bk-page-head">
+      <h1>The team behind Knead to Know</h1>
+      <p>A small, passionate team that built this app from the ground up, one component at a time.</p>
+    </header>
+
+    <div class="bk-row" style="gap: 6px; margin: 14px 0 6px">
+      <span class="bk-muted" style="margin-right: 4px">Built with</span>
+      @for (s of stack; track s.label) { <span class="bk-tag">{{ s.label }}</span> }
+    </div>
+
+    <div class="bk-cat-grid" style="margin-top: 14px">
+      @for (dev of developers; track dev.name) {
+        <article class="bk-card bk-row" style="flex-wrap: nowrap; align-items: flex-start; margin: 0">
+          <img class="bk-dev__avatar" [src]="dev.avatar" alt="" (error)="$any($event.target).style.display='none'" />
+          <div style="flex: 1; min-width: 0">
+            <h3 style="margin: 0">
+              @if (dev.resumeUrl) {
+                <a [href]="dev.resumeUrl" target="_blank" rel="noopener noreferrer" style="color: inherit; text-underline-offset: 4px">{{ dev.name }}</a>
+              } @else { {{ dev.name }} }
+            </h3>
+            <p style="margin: 2px 0 8px; font-weight: 700; font-size: 0.875rem; color: var(--bakery-burnt)">{{ dev.role }}</p>
+            <p class="bk-muted" style="margin: 0 0 10px; line-height: 1.5">{{ dev.bio }}</p>
+            <div class="bk-row" style="gap: 6px">
+              @for (skill of dev.skills; track skill) { <span class="bk-tag">{{ skill }}</span> }
+            </div>
+          </div>
+        </article>
+      }
+    </div>
+
+    <p class="bk-muted" style="text-align: center; margin: 28px 0 8px">Built with care for bakery lovers everywhere.<br />Knead to Know v1.0, © 2026</p>
+
+  </div>
+</ion-content>

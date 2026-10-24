@@ -1,0 +1,295 @@
+<ion-header class="no-print">
+  <ion-toolbar>
+    <ion-menu-button slot="start" aria-label="Open menu"></ion-menu-button>
+    <ion-title>Checkout</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="page-content" [scrollY]="true">
+
+  @if (lines().length === 0) {
+    <div class="bk-wrap">
+      <div class="bk-empty">
+        <h3>Your bag is empty</h3>
+        <p>Add some freshly baked goodies before checking out.</p>
+        <a class="bk-btn bk-btn--dark" routerLink="/bread-catalog">Browse the menu</a>
+      </div>
+    </div>
+  } @else {
+  <div class="bk-wrap bk-wrap--cta">
+
+    <!-- 1 · Bag -->
+    <section class="bk-card" style="margin-top: 16px">
+      <div class="bk-step"><span class="bk-step__n">1</span><h2>Your bag</h2></div>
+      @for (line of lines(); track line.product.id) {
+        <div class="bk-line" style="background: transparent; box-shadow: none">
+          @if (line.product.image_url) {
+            <img class="bk-line__img" [src]="line.product.image_url" alt="" (error)="$any($event.target).style.display='none'" />
+          } @else {
+            <img class="bk-line__img" src="logo.jpg" alt="" />
+          }
+          <div class="bk-line__info">
+            <p class="bk-line__name">{{ line.product.name }}</p>
+            <p class="bk-line__meta">{{ formatPrice(line.product.price) }} each, {{ formatPrice(line.product.price * line.quantity) }} total</p>
+          </div>
+          <div class="bk-stepper bk-stepper--sm" role="group" [attr.aria-label]="'Quantity of ' + line.product.name">
+            <button type="button" (click)="cartQty(line.product.id, -1)" aria-label="Decrease quantity">−</button>
+            <span>{{ line.quantity }}</span>
+            <button type="button" (click)="cartQty(line.product.id, 1)" aria-label="Increase quantity">+</button>
+          </div>
+        </div>
+      }
+    </section>
+
+    <!-- 2 · Fulfillment -->
+    <section class="bk-card">
+      <div class="bk-step"><span class="bk-step__n">2</span><h2>How do you want your order?</h2></div>
+
+      <button type="button" class="bk-option" [class.is-active]="fulfillment() === 'delivery'" (click)="fulfillment.set('delivery')">
+        <span class="bk-option__text">
+          <strong>Delivery</strong>
+          <small>
+            We bring it to your door.
+            @if (subtotal() >= 500) { Delivery is free on this order. } @else { Delivery fee {{ formatPrice(deliveryFee()) }}. }
+          </small>
+        </span>
+        <span class="bk-option__dot"></span>
+      </button>
+
+      <button type="button" class="bk-option" [class.is-active]="fulfillment() === 'pickup'" (click)="fulfillment.set('pickup')">
+        <span class="bk-option__text">
+          <strong>In-store pickup</strong>
+          <small>123 Banawe St, Quezon City. No delivery fee.</small>
+        </span>
+        <span class="bk-option__dot"></span>
+      </button>
+    </section>
+
+    <!-- 3 · Details -->
+    <section class="bk-card">
+      <div class="bk-step">
+        <span class="bk-step__n">3</span>
+        <h2>@if (fulfillment() === 'delivery') { Delivery details } @else { Contact details }</h2>
+      </div>
+
+      <div class="bk-form">
+        <div class="bk-fieldset">
+          <label class="bk-label" for="checkout-name">Recipient name</label>
+          <input id="checkout-name" class="bk-input--block" type="text" autocomplete="name" placeholder="Maria Santos"
+                 [value]="form().name" (input)="setField('name', $any($event.target).value)" />
+          @if (touched() && errors().name) { <p class="bk-error">{{ errors().name }}</p> }
+        </div>
+
+        <div class="bk-fieldset">
+          <label class="bk-label" for="checkout-phone">Contact number</label>
+          <input id="checkout-phone" class="bk-input--block" type="tel" inputmode="tel" autocomplete="tel" placeholder="09171234567"
+                 [value]="form().phone" (input)="setField('phone', $any($event.target).value)" />
+          @if (touched() && errors().phone) { <p class="bk-error">{{ errors().phone }}</p> }
+        </div>
+
+        @if (fulfillment() === 'pickup') {
+          <div class="bk-note">
+            <strong>Pickup location</strong>
+            <p>123 Banawe St, Quezon City. Open daily, 7 AM to 6 PM.</p>
+            <p>We'll notify you when your order is ready.</p>
+          </div>
+        }
+
+        @if (fulfillment() === 'delivery') {
+          <div class="bk-fieldset">
+            <label class="bk-label" for="checkout-address">Delivery address</label>
+            @if (mapConfigured && !mapError()) {
+              <p class="bk-hint">Start typing and pick a suggestion, or tap the map below.</p>
+            }
+            <input id="checkout-address" class="bk-input--block" type="text" autocomplete="street-address" placeholder="123 Banawe St, Quezon City"
+                   [value]="form().address" (input)="setField('address', $any($event.target).value)" />
+            @if (touched() && errors().address) { <p class="bk-error">{{ errors().address }}</p> }
+          </div>
+
+          <div class="bk-fieldset">
+            <label class="bk-label" for="checkout-unit">Unit or building notes <small>Optional</small></label>
+            <input id="checkout-unit" class="bk-input--block" type="text" placeholder="House no., floor, landmark, gate code"
+                   [value]="form().unit" (input)="setField('unit', $any($event.target).value)" />
+          </div>
+
+          @if (mapConfigured && !mapError()) {
+            <div class="bk-fieldset">
+              <span class="bk-label">Delivery pin</span>
+              <div id="checkout-map" class="checkout-map"></div>
+              <p class="bk-hint">Drag the pin or tap the map to set the exact drop-off point.</p>
+            </div>
+          }
+
+          @if (!mapConfigured || mapError()) {
+            <div class="bk-fieldset">
+              <span class="bk-label">
+                Map coordinates
+                @if (!mapConfigured) { <small>The Google Maps key isn't configured, so enter them by hand.</small> }
+              </span>
+              <div class="bk-grid-2">
+                <input class="bk-input--block" type="number" step="any" placeholder="Latitude" aria-label="Latitude"
+                       [value]="form().lat ?? ''" (input)="setCoord('lat', $any($event.target).value)" />
+                <input class="bk-input--block" type="number" step="any" placeholder="Longitude" aria-label="Longitude"
+                       [value]="form().lng ?? ''" (input)="setCoord('lng', $any($event.target).value)" />
+              </div>
+            </div>
+          }
+
+          @if (touched() && errors().coords) { <p class="bk-error">{{ errors().coords }}</p> }
+
+          @if (form().lat != null && form().lng != null) {
+            <span class="bk-pill-ok">Pin set: {{ form().lat!.toFixed(5) }}, {{ form().lng!.toFixed(5) }}</span>
+          }
+        }
+
+        <!-- Schedule -->
+        <div class="bk-fieldset">
+          <span class="bk-label">@if (fulfillment() === 'delivery') { Delivery time } @else { Pickup time }</span>
+
+          <button type="button" class="bk-option" [class.is-active]="scheduleMode() === 'asap'" (click)="scheduleMode.set('asap')">
+            <span class="bk-option__text"><strong>As soon as possible</strong><small>We'll get started right away.</small></span>
+            <span class="bk-option__dot"></span>
+          </button>
+          <button type="button" class="bk-option" [class.is-active]="scheduleMode() === 'scheduled'" (click)="scheduleMode.set('scheduled')">
+            <span class="bk-option__text"><strong>Schedule for later</strong><small>Pick a time at least 30 minutes from now.</small></span>
+            <span class="bk-option__dot"></span>
+          </button>
+
+          @if (scheduleMode() === 'scheduled') {
+            <input type="datetime-local" class="bk-input--block" aria-label="Date and time"
+                   [min]="minScheduleDateTime()" [value]="scheduledAt()" (input)="scheduledAt.set($any($event.target).value)" />
+            @if (touched() && scheduleError()) { <p class="bk-error">{{ scheduleError() }}</p> }
+            @if (scheduledAt() && !scheduleError()) {
+              <p class="bk-msg-ok">Scheduled for {{ scheduledAt() | date:'EEE, MMM d, h:mm a' }}</p>
+            }
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 · Payment -->
+    <section class="bk-card">
+      <div class="bk-step"><span class="bk-step__n">4</span><h2>Payment method</h2></div>
+
+      <button type="button" class="bk-option" [class.is-active]="payment() === 'cod'" (click)="payment.set('cod')">
+        <span class="bk-option__text">
+          <strong>{{ fulfillment() === 'pickup' ? 'Pay at the counter' : 'Cash on delivery' }}</strong>
+          <small>@if (fulfillment() === 'pickup') { Pay when you pick up. } @else { Pay the driver when it arrives. }</small>
+        </span>
+        <span class="bk-option__dot"></span>
+      </button>
+      <button type="button" class="bk-option" [class.is-active]="payment() === 'card'" (click)="payment.set('card')">
+        <span class="bk-option__text"><strong>Credit or debit card</strong><small>Visa, Mastercard, JCB via PayMongo</small></span>
+        <span class="bk-option__dot"></span>
+      </button>
+      <button type="button" class="bk-option" [class.is-active]="payment() === 'gcash'" (click)="payment.set('gcash')">
+        <span class="bk-option__text"><strong>GCash</strong><small>Pay with your GCash wallet</small></span>
+        <span class="bk-option__dot"></span>
+      </button>
+      <button type="button" class="bk-option" [class.is-active]="payment() === 'paymaya'" (click)="payment.set('paymaya')">
+        <span class="bk-option__text"><strong>Maya</strong><small>Pay with your Maya account</small></span>
+        <span class="bk-option__dot"></span>
+      </button>
+      <button type="button" class="bk-option" [class.is-active]="payment() === 'grab_pay'" (click)="payment.set('grab_pay')">
+        <span class="bk-option__text"><strong>GrabPay</strong><small>Pay with your Grab wallet</small></span>
+        <span class="bk-option__dot"></span>
+      </button>
+    </section>
+
+    <!-- Voucher -->
+    <section class="bk-card">
+      <h2>Promo code or voucher</h2>
+
+      <div class="bk-promo">
+        <input class="bk-input--block" type="text" placeholder="Enter a promo code" aria-label="Promo code"
+               [value]="promoCode()" (input)="promoCode.set($any($event.target).value); clearPromoMessages()" />
+        <button type="button" class="bk-btn bk-btn--dark" [disabled]="promoApplying()" (click)="applyPromoCode()">
+          {{ promoApplying() ? 'Applying…' : 'Apply' }}
+        </button>
+      </div>
+
+      @if (promoMessage(); as msg) {
+        <p [class]="msg.ok ? 'bk-msg-ok' : 'bk-msg-err'">{{ msg.text }}</p>
+      }
+
+      <div style="margin-top: 14px">
+        @if (vouchersLoading()) {
+          <p class="bk-hint">Loading your vouchers…</p>
+        } @else if (vouchersError(); as err) {
+          <p class="bk-msg-err">{{ err }}</p>
+          <button type="button" class="bk-linkbtn" (click)="retryLoadVouchers()">Try again</button>
+        } @else if (claimedVouchers().length === 0) {
+          <p class="bk-hint">No claimed vouchers yet. <a routerLink="/promotions" class="bk-linkbtn">Browse promotions</a></p>
+        } @else {
+          <select class="bk-select" aria-label="Choose a voucher" [value]="selectedVoucher()?.id ?? ''" (change)="onVoucherChange($any($event.target).value)">
+            <option value="">No voucher</option>
+            @for (claim of claimedVouchers(); track claim.id) {
+              <option [value]="claim.voucher_id">{{ voucherLabel(claim) }}</option>
+            }
+          </select>
+
+          @if (selectedVoucher(); as v) {
+            <p class="bk-msg-ok">
+              {{ v.discount_type === 'percent' ? v.discount_value + '% off' : formatPrice(v.discount_value) + ' off' }}
+              @if (v.max_discount != null) { , up to {{ formatPrice(v.max_discount) }} }
+              <button type="button" class="bk-linkbtn" style="margin-left: 8px" (click)="clearVoucher()">Remove</button>
+            </p>
+            @if (voucherNote(); as note) { <p class="bk-msg-err">{{ note }}</p> }
+          }
+        }
+      </div>
+    </section>
+
+    <!-- Summary -->
+    <section class="bk-card bk-sum">
+      <h2>Order summary</h2>
+      <div class="bk-sum__row"><span>Subtotal ({{ itemCount() }} {{ itemCount() === 1 ? 'item' : 'items' }})</span><span>{{ formatPrice(subtotal()) }}</span></div>
+      @if (discount() > 0) {
+        <div class="bk-sum__row">
+          <span>Discount @if (selectedVoucher(); as v) { ({{ v.code }}) }</span>
+          <span class="bk-sum__free">− {{ formatPrice(discount()) }}</span>
+        </div>
+      }
+      <div class="bk-sum__row">
+        <span>@if (fulfillment() === 'pickup') { Pickup, no delivery fee } @else { Delivery fee }</span>
+        @if (displayDeliveryFee() === 0) { <span class="bk-sum__free">Free</span> } @else { <span>{{ formatPrice(displayDeliveryFee()) }}</span> }
+      </div>
+      <div class="bk-sum__row"><span>Tax (12%)</span><span>{{ formatPrice(tax()) }}</span></div>
+      @if (scheduleMode() === 'scheduled' && scheduledAt()) {
+        <div class="bk-sum__row">
+          <span>@if (fulfillment() === 'pickup') { Pickup scheduled } @else { Delivery scheduled }</span>
+          <span>{{ scheduledAt() | date:'MMM d, h:mm a' }}</span>
+        </div>
+      }
+      <div class="bk-sum__row bk-sum__row--total" style="margin-bottom: 0"><span>Estimated total</span><span>{{ formatPrice(displayTotal()) }}</span></div>
+      @if (fulfillment() === 'delivery' && displayDeliveryFee() === 0) {
+        <p class="bk-msg-ok">You unlocked free delivery on orders over ₱500.</p>
+      }
+    </section>
+
+    @if (orderError()) {
+      <div class="bk-alert" role="alert">
+        <p style="margin: 0 0 8px">{{ orderError() }}</p>
+        <button type="button" class="bk-btn bk-btn--outline bk-btn--sm" (click)="placeOrder()" [disabled]="placing()">Try again</button>
+      </div>
+    }
+
+    @if (touched() && (hasErrors() || scheduleError())) {
+      <p class="bk-alert" role="alert">Fix the highlighted fields above before placing your order.</p>
+    }
+
+  </div>
+
+  <!-- Sticky place-order bar -->
+  <div class="bk-cta">
+    <div class="bk-cta__inner">
+      <span class="bk-cta__total">Total<strong>{{ formatPrice(displayTotal()) }}</strong></span>
+      <button type="button" class="bk-btn bk-btn--dark" (click)="placeOrder()" [disabled]="placing()">
+        @if (placing()) { Placing order… } @else {
+          @if (fulfillment() === 'pickup') { Place pickup order } @else { Place delivery order }
+        }
+      </button>
+    </div>
+  </div>
+  }
+</ion-content>

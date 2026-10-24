@@ -1,0 +1,90 @@
+<ion-menu content-id="main-content" type="overlay" class="app-menu">
+
+  <!-- Brand + close -->
+  <div class="bk-menu__head">
+    <img class="bk-menu__logo" src="/logo.jpg" alt="" (error)="onImageError($event)" />
+    <div class="bk-menu__brand">
+      <p class="bk-menu__name">Knead to Know</p>
+      <p class="bk-menu__tag">Artisan bakery</p>
+    </div>
+    <ion-menu-toggle auto-hide="false">
+      <button type="button" class="bk-menu__close" aria-label="Close menu">
+        <ion-icon [icon]="closeIcon" aria-hidden="true"></ion-icon>
+      </button>
+    </ion-menu-toggle>
+  </div>
+
+  <!-- Scrollable navigation -->
+  <ion-content class="bk-menu__scroll" [scrollY]="true">
+
+    <!-- Who's signed in -->
+    <ion-menu-toggle auto-hide="false">
+      @if (user(); as u) {
+        <a class="bk-menu__me" routerLink="/profile" aria-label="Open your account">
+          <span class="bk-menu__avatar" aria-hidden="true">{{ initial() }}</span>
+          <span class="bk-menu__who">
+            <strong>{{ u.displayName }}</strong>
+            <small>{{ roleLabel() }}</small>
+          </span>
+          <ion-icon [icon]="chevronIcon" aria-hidden="true"></ion-icon>
+        </a>
+      } @else {
+        <a class="bk-menu__me" routerLink="/login">
+          <span class="bk-menu__avatar" aria-hidden="true">?</span>
+          <span class="bk-menu__who">
+            <strong>Welcome</strong>
+            <small>Sign in to order and track</small>
+          </span>
+          <ion-icon [icon]="chevronIcon" aria-hidden="true"></ion-icon>
+        </a>
+      }
+    </ion-menu-toggle>
+
+    @for (section of groupedPages(); track section.label) {
+      <nav class="bk-menu__group" [attr.aria-label]="section.label">
+        <p class="bk-menu__label">{{ section.label }}</p>
+
+        @for (page of section.pages; track page.url + page.title) {
+          <ion-menu-toggle auto-hide="false">
+            <a
+              class="bk-menu__link"
+              [routerLink]="page.url"
+              [class.is-active]="isActive(page)"
+              [attr.aria-current]="isActive(page) ? 'page' : null"
+            >
+              <ion-icon [icon]="page.icon" aria-hidden="true"></ion-icon>
+              <span class="bk-menu__text">{{ page.title }}</span>
+
+              @if (page.url === '/notifications' && unreadCount() > 0) {
+                <span class="bk-menu__badge" [attr.aria-label]="unreadCount() + ' unread'">{{ unreadCount() > 99 ? '99+' : unreadCount() }}</span>
+              }
+              @if (page.title === 'Orders & cart' && itemCount() > 0) {
+                <span class="bk-menu__badge" [attr.aria-label]="itemCount() + ' items in cart'">{{ itemCount() > 99 ? '99+' : itemCount() }}</span>
+              }
+            </a>
+          </ion-menu-toggle>
+        }
+      </nav>
+    }
+  </ion-content>
+
+  <!-- Pinned footer: always on screen, never hidden behind anything -->
+  <div class="bk-menu__foot">
+    @if (isAuthenticated()) {
+      <ion-menu-toggle auto-hide="false">
+        <button type="button" class="bk-menu__logout" [disabled]="isLoggingOut()" (click)="confirmLogout()">
+          <ion-icon [icon]="logOutIcon" aria-hidden="true"></ion-icon>
+          <span>{{ isLoggingOut() ? 'Signing out…' : 'Log out' }}</span>
+        </button>
+      </ion-menu-toggle>
+    } @else {
+      <ion-menu-toggle auto-hide="false">
+        <a class="bk-menu__signin" routerLink="/login">
+          <ion-icon [icon]="logInIcon" aria-hidden="true"></ion-icon>
+          <span>Sign in</span>
+        </a>
+      </ion-menu-toggle>
+    }
+  </div>
+
+</ion-menu>

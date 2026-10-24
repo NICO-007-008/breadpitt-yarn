@@ -1,0 +1,61 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/dashboard" text=""></ion-back-button>
+    </ion-buttons>
+    <ion-title>Sign in</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="page-content" [scrollY]="true">
+  <main class="bk-auth">
+
+    <header class="bk-auth__brand">
+      <img class="bk-auth__logo" src="/logo.jpg" alt="Knead to Know" (error)="$any($event.target).style.display='none'" />
+      <h1>Welcome back</h1>
+      <p>Sign in to order fresh bread, track deliveries and reorder your favorites.</p>
+    </header>
+
+    @if (errorMessage(); as error) {
+      <p class="bk-alert" role="alert">{{ error }}</p>
+    }
+
+    <ion-input
+      class="bk-field"
+      type="email"
+      inputmode="email"
+      autocomplete="email"
+      label="Email"
+      label-placement="floating"
+      fill="outline"
+      [value]="email()"
+      (ionInput)="email.set(($event.detail.value ?? '').toString())"
+    ></ion-input>
+
+    <ion-input
+      class="bk-field"
+      type="password"
+      autocomplete="current-password"
+      enterkeyhint="go"
+      label="Password"
+      label-placement="floating"
+      fill="outline"
+      [value]="password()"
+      (ionInput)="password.set(($event.detail.value ?? '').toString())"
+      (keyup.enter)="handleSubmit()"
+    ></ion-input>
+
+    <button type="button" class="bk-btn bk-btn--dark bk-btn--block" [disabled]="submitting()" (click)="handleSubmit()">
+      {{ submitting() ? 'Signing in…' : 'Sign in' }}
+    </button>
+
+    <p class="bk-auth__alt">
+      New here? <a routerLink="/register" [queryParams]="returnUrl ? { returnUrl: returnUrl } : null">Create an account</a>
+    </p>
+
+    <p class="bk-auth__alt">
+      <a routerLink="/bread-catalog">Continue browsing without an account</a>
+    </p>
+
+  </main>
+</ion-content>

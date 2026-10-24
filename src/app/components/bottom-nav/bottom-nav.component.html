@@ -1,0 +1,25 @@
+@if (onAllowedRoute()) {
+  <nav class="bk-nav" [class.is-hidden]="hidden()" aria-label="Primary">
+    @for (tab of tabs; track tab.url) {
+      <a
+        class="bk-nav__tab"
+        [routerLink]="tab.url"
+        [class.is-active]="isActive(tab)"
+        [attr.aria-current]="isActive(tab) ? 'page' : null"
+      >
+        <span class="bk-nav__icon">
+          <ion-icon [icon]="isActive(tab) ? tab.iconActive : tab.icon" aria-hidden="true"></ion-icon>
+          @if (tab.badge === 'cart' && cartCount() > 0) {
+            <span class="bk-nav__badge" [attr.aria-label]="cartCount() + ' items in cart'">
+              {{ cartCount() > 99 ? '99+' : cartCount() }}
+            </span>
+          }
+          @if (tab.badge === 'unread' && unreadCount() > 0) {
+            <span class="bk-nav__dot" [attr.aria-label]="unreadCount() + ' unread notifications'"></span>
+          }
+        </span>
+        <span>{{ tab.label }}</span>
+      </a>
+    }
+  </nav>
+}

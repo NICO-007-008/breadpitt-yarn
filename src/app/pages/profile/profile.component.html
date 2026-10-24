@@ -1,0 +1,155 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-menu-button slot="start" aria-label="Open menu"></ion-menu-button>
+    <ion-title>Account</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="page-content" [scrollY]="true">
+  <div class="bk-wrap">
+
+    <!-- Identity -->
+    <section class="bk-card bk-card--dark bk-row" style="margin-top: 16px; flex-wrap: nowrap">
+      <div class="bk-avatar" aria-hidden="true">
+        @if (user(); as u) { {{ (u.displayName || u.email)[0] }} } @else { ? }
+      </div>
+      @if (user(); as u) {
+        <div style="min-width: 0">
+          <p class="bk-id__name">{{ u.displayName }}</p>
+          <p class="bk-id__mail">{{ u.email }}</p>
+          <span class="bk-id__role">{{ u.role === 'admin' ? 'Admin' : u.role === 'store_admin' ? 'Store admin' : 'Customer' }}</span>
+        </div>
+      }
+    </section>
+
+    <!-- Shortcuts to pages that used to be hidden in the side menu -->
+    <nav class="bk-links" aria-label="Shortcuts">
+      <a routerLink="/notifications"><strong>Notifications</strong><span>Order updates and offers</span></a>
+      <a routerLink="/promotions"><strong>Promotions</strong><span>Vouchers you can claim</span></a>
+      <a routerLink="/feedback"><strong>Feedback</strong><span>Rate what you ordered</span></a>
+      <a routerLink="/contact-us"><strong>Contact us</strong><span>Questions or custom needs</span></a>
+    </nav>
+
+    <div class="bk-seg" role="tablist">
+      <button type="button" role="tab" [class.is-active]="tab() === 'profile'" [attr.aria-selected]="tab() === 'profile'" (click)="tab.set('profile')">Profile</button>
+      <button type="button" role="tab" [class.is-active]="tab() === 'addresses'" [attr.aria-selected]="tab() === 'addresses'" (click)="tab.set('addresses')">Addresses</button>
+      <button type="button" role="tab" [class.is-active]="tab() === 'password'" [attr.aria-selected]="tab() === 'password'" (click)="tab.set('password')">Password</button>
+    </div>
+
+    <!-- ══ Profile ══ -->
+    @if (tab() === 'profile') {
+      <section class="bk-card">
+        @if (profileError(); as err) { <p class="bk-alert" role="alert">{{ err }}</p> }
+        @if (profileMessage(); as msg) { <p class="bk-alert bk-alert--ok" role="status">{{ msg }}</p> }
+
+        <ion-input class="bk-field" type="text" autocomplete="name" label="Display name" label-placement="floating" fill="outline"
+                   [value]="displayName()" (ionInput)="displayName.set(($event.detail.value ?? '').toString())"></ion-input>
+
+        <ion-input class="bk-field" type="email" label="Email" label-placement="floating" fill="outline" disabled
+                   helper-text="This is the email you sign in with. It can't be changed here."
+                   [value]="user()?.email ?? ''"></ion-input>
+
+        <button type="button" class="bk-btn bk-btn--dark bk-btn--block" [disabled]="savingProfile() || !displayName().trim()" (click)="saveProfile()">
+          {{ savingProfile() ? 'Saving…' : 'Save changes' }}
+        </button>
+      </section>
+    }
+
+    <!-- ══ Addresses ══ -->
+    @if (tab() === 'addresses') {
+      <section class="bk-card">
+        <h2>Add an address</h2>
+        @if (addressFormError(); as err) { <p class="bk-alert" role="alert">{{ err }}</p> }
+
+        <div class="bk-form">
+          <div class="bk-fieldset">
+            <label class="bk-label" for="addr-label">Label</label>
+            <select id="addr-label" class="bk-select" [value]="addrLabel()" (change)="addrLabel.set($any($event.target).value)">
+              <option value="Home">Home</option>
+              <option value="Office">Office</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="bk-grid-2">
+            <ion-input class="bk-field" type="text" autocomplete="name" label="Recipient name" label-placement="floating" fill="outline"
+                       [value]="addrRecipient()" (ionInput)="addrRecipient.set(($event.detail.value ?? '').toString())"></ion-input>
+            <ion-input class="bk-field" type="tel" autocomplete="tel" label="Phone" label-placement="floating" fill="outline"
+                       [value]="addrPhone()" (ionInput)="addrPhone.set(($event.detail.value ?? '').toString())"></ion-input>
+          </div>
+          <ion-input class="bk-field" type="text" label="Street, building, unit" label-placement="floating" fill="outline"
+                     [value]="addrLine()" (ionInput)="addrLine.set(($event.detail.value ?? '').toString())"></ion-input>
+          <ion-input class="bk-field" type="text" label="City or province" label-placement="floating" fill="outline"
+                     [value]="addrCity()" (ionInput)="addrCity.set(($event.detail.value ?? '').toString())"></ion-input>
+
+          <label class="bk-check">
+            <input type="checkbox" [checked]="addrDefault()" (change)="addrDefault.set($any($event.target).checked)" />
+            <div><strong>Use as my default address</strong><span>We'll pre-fill it at checkout.</span></div>
+          </label>
+
+          <button type="button" class="bk-btn bk-btn--dark bk-btn--block" [disabled]="savingAddress()" (click)="saveAddress()">
+            {{ savingAddress() ? 'Saving…' : 'Save address' }}
+          </button>
+        </div>
+      </section>
+
+      @if (addressesError(); as err) {
+        <div class="bk-empty">
+          <p>{{ err }}</p>
+          <button type="button" class="bk-btn bk-btn--dark" (click)="loadAddresses()">Try again</button>
+        </div>
+      } @else if (addressesLoading()) {
+        <div class="bk-empty"><div class="bk-spinner"></div><p>Loading addresses…</p></div>
+      } @else if (addresses().length === 0) {
+        <div class="bk-empty">
+          <h3>No saved addresses</h3>
+          <p>Add one above for quicker checkouts.</p>
+        </div>
+      } @else {
+        @for (a of addresses(); track a.id) {
+          <div class="bk-line" style="flex-wrap: wrap">
+            <div class="bk-line__info" style="flex: 1 1 180px">
+              <p class="bk-line__name">
+                {{ a.label }}
+                @if (a.is_default) { <span class="status-badge status-badge--green" style="margin-left: 6px">Default</span> }
+              </p>
+              <p class="bk-line__meta">{{ a.recipient }}, {{ a.phone }}</p>
+              <p class="bk-line__meta">{{ a.address_line }}{{ a.city ? ', ' + a.city : '' }}</p>
+            </div>
+            <div class="bk-row" style="flex: 0 0 auto; gap: 6px">
+              @if (!a.is_default) {
+                <button type="button" class="bk-btn bk-btn--soft bk-btn--sm" (click)="makeDefault(a)">Make default</button>
+              }
+              <button type="button" class="bk-iconbtn" style="width: 44px; height: 44px; font-size: 20px" (click)="removeAddress(a)" aria-label="Remove address">
+                <ion-icon [icon]="trashIcon" aria-hidden="true"></ion-icon>
+              </button>
+            </div>
+          </div>
+        }
+      }
+    }
+
+    <!-- ══ Password ══ -->
+    @if (tab() === 'password') {
+      <section class="bk-card">
+        @if (passwordError(); as err) { <p class="bk-alert" role="alert">{{ err }}</p> }
+        @if (passwordMessage(); as msg) { <p class="bk-alert bk-alert--ok" role="status">{{ msg }}</p> }
+
+        <ion-input class="bk-field" type="password" autocomplete="new-password" label="New password" label-placement="floating" fill="outline"
+                   helper-text="At least 6 characters"
+                   [value]="newPassword()" (ionInput)="newPassword.set(($event.detail.value ?? '').toString())"></ion-input>
+        @if (newPassword() && passwordErrors().newPassword) { <p class="bk-error" style="margin: -8px 0 12px">{{ passwordErrors().newPassword }}</p> }
+
+        <ion-input class="bk-field" type="password" autocomplete="new-password" label="Confirm new password" label-placement="floating" fill="outline"
+                   [value]="confirmPassword()" (ionInput)="confirmPassword.set(($event.detail.value ?? '').toString())"></ion-input>
+        @if (confirmPassword() && passwordErrors().confirm) { <p class="bk-error" style="margin: -8px 0 12px">{{ passwordErrors().confirm }}</p> }
+
+        <button type="button" class="bk-btn bk-btn--dark bk-btn--block" [disabled]="savingPassword() || passwordInvalid()" (click)="changePassword()">
+          {{ savingPassword() ? 'Updating…' : 'Change password' }}
+        </button>
+      </section>
+    }
+
+    <button type="button" class="bk-btn bk-btn--danger bk-btn--block" style="margin-top: 8px" (click)="logout()">Log out</button>
+
+  </div>
+</ion-content>

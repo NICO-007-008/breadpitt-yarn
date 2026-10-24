@@ -1,0 +1,75 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-menu-button slot="start" aria-label="Open menu"></ion-menu-button>
+    <ion-title>Promotions</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="page-content" [scrollY]="true">
+  <div class="bk-wrap">
+
+    <header class="bk-page-head">
+      <h1>Save on every bake</h1>
+      <p>Claim an offer to keep it on your account, then use it at checkout.</p>
+    </header>
+
+    <div class="bk-stats" style="grid-template-columns: repeat(3, minmax(0, 1fr))">
+      <div class="bk-stat"><strong>{{ activeCount() }}</strong><span>Active deals</span></div>
+      <div class="bk-stat"><strong>{{ maxDiscountPct() }}%</strong><span>Top discount</span></div>
+      <div class="bk-stat"><strong>Free</strong><span>Delivery over ₱500</span></div>
+    </div>
+
+    <div style="margin-top: 18px">
+      @if (loading()) {
+        <div class="bk-empty"><div class="bk-spinner"></div><p>Loading offers…</p></div>
+      } @else if (loadError(); as err) {
+        <p class="bk-alert" role="alert">{{ err }}</p>
+      } @else {
+        @if (notice(); as msg) { <p class="bk-alert bk-alert--ok" role="status">{{ msg }}</p> }
+
+        @if (cards().length === 0) {
+          <div class="bk-empty">
+            <h3>No offers right now</h3>
+            <p>Check back soon, or subscribe on the home screen to hear about new ones first.</p>
+          </div>
+        }
+
+        @for (promo of cards(); track promo.id) {
+          <article class="bk-ticket">
+            <div class="bk-ticket__stub" [attr.data-accent]="promo.accent">
+              <strong>{{ discountFor(promo) }}</strong>
+              <span>{{ badgeFor(promo) }}</span>
+            </div>
+            <div class="bk-ticket__body">
+              <h3>{{ promo.title }}</h3>
+              <p>{{ promo.description }}</p>
+              <p class="bk-ticket__meta">{{ eligibilityFor(promo) }}. {{ expiryFor(promo) }}</p>
+
+              <div class="bk-row" style="margin-top: 12px">
+                <button type="button" class="bk-ticket__code" (click)="handleCopy(promo.code)" [attr.aria-label]="'Copy code ' + promo.code">
+                  {{ copied() === promo.code ? 'Copied' : promo.code }}
+                </button>
+
+                @if (isClaimed(promo.id)) {
+                  <span class="bk-pill-ok" style="margin-left: auto">Claimed</span>
+                } @else {
+                  <button type="button" class="bk-btn bk-btn--dark bk-btn--sm" style="margin-left: auto" (click)="handleClaim(promo)" [disabled]="isBusy(promo.id)">
+                    {{ isBusy(promo.id) ? 'Claiming…' : 'Claim' }}
+                  </button>
+                }
+              </div>
+            </div>
+          </article>
+        }
+
+        @if (!user()) {
+          <div class="bk-card bk-card--flat" style="text-align: center">
+            <p class="bk-muted" style="margin: 0 0 12px">You're browsing as a guest. Sign in to claim offers.</p>
+            <a class="bk-btn bk-btn--dark" routerLink="/login">Sign in to claim</a>
+          </div>
+        }
+      }
+    </div>
+
+  </div>
+</ion-content>

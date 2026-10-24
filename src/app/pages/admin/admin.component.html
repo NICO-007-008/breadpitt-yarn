@@ -1,0 +1,411 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-menu-button slot="start" aria-label="Open menu"></ion-menu-button>
+    <ion-title>Store manager</ion-title>
+    <ion-buttons slot="end">
+      @if (user(); as u) { <span class="bk-tag" style="margin-right: 12px">{{ roleBadge() }}</span> }
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="page-content" [scrollY]="true">
+  <div class="bk-wrap bk-wrap--wide">
+
+    <header class="bk-page-head bk-row bk-row--between" style="align-items: flex-end">
+      <div>
+        <h1>@if (user(); as u) { Hello, {{ u.displayName }} } @else { Store manager }</h1>
+        <p>{{ products().length }} {{ products().length === 1 ? 'product' : 'products' }} live in the shop.</p>
+      </div>
+    </header>
+
+    <!-- Tabs -->
+    <div class="bk-chips bk-chips--tabs" role="tablist" aria-label="Sections">
+      <button type="button" role="tab" class="bk-chip" [class.is-active]="tab() === 'products'" [attr.aria-selected]="tab() === 'products'" (click)="tab.set('products')">Products</button>
+      <button type="button" role="tab" class="bk-chip" [class.is-active]="tab() === 'inventory'" [attr.aria-selected]="tab() === 'inventory'" (click)="tab.set('inventory')">Inventory</button>
+      <button type="button" role="tab" class="bk-chip" [class.is-active]="tab() === 'orders'" [attr.aria-selected]="tab() === 'orders'" (click)="tab.set('orders'); loadOrders()">Orders</button>
+      <button type="button" role="tab" class="bk-chip" [class.is-active]="tab() === 'sales'" [attr.aria-selected]="tab() === 'sales'" (click)="tab.set('sales'); loadOrders()">Sales</button>
+      <button type="button" role="tab" class="bk-chip" [class.is-active]="tab() === 'categories'" [attr.aria-selected]="tab() === 'categories'" (click)="tab.set('categories')">Categories</button>
+      @if (canManageUsers()) {
+        <button type="button" role="tab" class="bk-chip" [class.is-active]="tab() === 'users'" [attr.aria-selected]="tab() === 'users'" (click)="tab.set('users')">Users and roles</button>
+      }
+    </div>
+
+    <!-- ══════════ PRODUCTS ══════════ -->
+    @if (tab() === 'products') {
+
+      @if (formError(); as err) { <p class="bk-alert" role="alert">{{ err }}</p> }
+
+      <section class="bk-card">
+        <button type="button" class="bk-disclose" (click)="showCreate.set(!showCreate())" [attr.aria-expanded]="showCreate()">
+          <h2 style="margin: 0">Add a product</h2>
+          <span>{{ showCreate() ? 'Hide' : 'Show' }}</span>
+        </button>
+
+        @if (showCreate()) {
+          <div class="bk-prodform">
+            <!-- Image -->
+            <div class="bk-prodform__img">
+              @if (createImagePreview(); as preview) {
+                <div class="bk-imgbox">
+                  <img [src]="preview" alt="Preview" (error)="$any($event.target).style.display='none'" />
+                  <button type="button" class="bk-imgbox__x" (click)="clearCreateImage()" aria-label="Remove image"><ion-icon [icon]="closeIcon" aria-hidden="true"></ion-icon></button>
+                </div>
+              } @else {
+                <div class="bk-imgbox bk-imgbox--empty"><ion-icon [icon]="imageIcon" aria-hidden="true"></ion-icon><span>No image</span></div>
+              }
+              <input #createFile type="file" accept="image/*" hidden (change)="onFileSelected($event)" />
+              <button type="button" class="bk-btn bk-btn--outline bk-btn--sm" (click)="createFile.click()">Choose image</button>
+            </div>
+
+            <!-- Fields -->
+            <div class="bk-form">
+              <ion-input class="bk-field" type="text" label="Product name" label-placement="floating" fill="outline" placeholder="Sourdough Loaf"
+                         [value]="createName()" (ionInput)="createName.set(($event.detail.value ?? '').toString())"></ion-input>
+
+              <div class="bk-grid-3">
+                <div class="bk-fieldset">
+                  <label class="bk-label" for="cp-cat">Category</label>
+                  <select id="cp-cat" class="bk-select" [value]="createCategory()" (change)="createCategory.set(selectValue($event))">
+                    @for (c of categoryNames(); track c) { <option [value]="c">{{ c }}</option> }
+                  </select>
+                </div>
+                <ion-input class="bk-field" type="number" min="0" step="0.01" label="Price (₱)" label-placement="floating" fill="outline"
+                           [value]="createPrice()" (ionInput)="createPrice.set(($event.detail.value ?? '').toString())"></ion-input>
+                <ion-input class="bk-field" type="number" min="0" step="1" label="Stock (units)" label-placement="floating" fill="outline"
+                           [value]="createStock()" (ionInput)="createStock.set(($event.detail.value ?? '').toString())"></ion-input>
+              </div>
+
+              <ion-input class="bk-field" type="text" label="Short description (optional)" label-placement="floating" fill="outline"
+                         [value]="createDescription()" (ionInput)="createDescription.set(($event.detail.value ?? '').toString())"></ion-input>
+
+              <div class="bk-fieldset">
+                <label class="bk-label" for="cp-ing">Ingredients</label>
+                <textarea id="cp-ing" class="bk-textarea" rows="3" placeholder="Flour, water, salt, yeast, butter"
+                          [value]="createIngredients()" (input)="createIngredients.set($any($event.target).value)"></textarea>
+              </div>
+              <div class="bk-fieldset">
+                <label class="bk-label" for="cp-nut">Nutritional value</label>
+                <textarea id="cp-nut" class="bk-textarea" rows="3" placeholder="Calories: 250 kcal, Protein: 8g, Carbs: 42g, Fat: 6g"
+                          [value]="createNutritionalValue()" (input)="createNutritionalValue.set($any($event.target).value)"></textarea>
+              </div>
+
+              <div class="bk-fieldset">
+                <div class="bk-row bk-row--between">
+                  <span class="bk-label" style="margin: 0">Additional information</span>
+                  <button type="button" class="bk-btn bk-btn--soft bk-btn--sm" (click)="addCreateExtraItem()"><ion-icon [icon]="addIcon" aria-hidden="true"></ion-icon>Add field</button>
+                </div>
+                @for (item of createExtraInfo(); track item.id) {
+                  <div class="bk-extra">
+                    <ion-input class="bk-field" type="text" fill="outline" placeholder="Label (e.g. Allergens)" aria-label="Label"
+                               [value]="item.label" (ionInput)="updateCreateExtraItem(item.id, 'label', ($event.detail.value ?? '').toString())"></ion-input>
+                    <ion-input class="bk-field" type="text" fill="outline" placeholder="Detail" aria-label="Detail"
+                               [value]="item.value" (ionInput)="updateCreateExtraItem(item.id, 'value', ($event.detail.value ?? '').toString())"></ion-input>
+                    <button type="button" class="bk-iconbtn" style="width: 44px; height: 44px; font-size: 20px" (click)="removeCreateExtraItem(item.id)" aria-label="Remove field"><ion-icon [icon]="closeIcon" aria-hidden="true"></ion-icon></button>
+                  </div>
+                }
+              </div>
+
+              <button type="button" class="bk-btn bk-btn--dark bk-btn--block" [disabled]="saving()" (click)="handleCreate()">
+                {{ saving() ? 'Saving…' : 'Add product' }}
+              </button>
+            </div>
+          </div>
+        }
+      </section>
+
+      <!-- Product list -->
+      @if (productsError(); as err) {
+        <div class="bk-empty"><h3>We couldn't load products</h3><p>{{ err }}</p><button type="button" class="bk-btn bk-btn--dark" (click)="loadProducts()">Try again</button></div>
+      } @else if (productsLoading()) {
+        <div class="bk-empty"><div class="bk-spinner"></div><p>Loading products…</p></div>
+      } @else if (products().length === 0) {
+        <div class="bk-empty"><h3>No products yet</h3><p>Use the form above to add your first product.</p></div>
+      } @else {
+        @for (p of products(); track p.id) {
+          <article class="bk-card">
+
+            @if (editingId() !== p.id) {
+              <div class="bk-prod">
+                @if (p.image_url) {
+                  <img class="bk-prod__img" [src]="p.image_url" alt="" (error)="$any($event.target).style.display='none'" />
+                } @else {
+                  <img class="bk-prod__img" src="logo.jpg" alt="" />
+                }
+                <div class="bk-prod__info">
+                  <div class="bk-row" style="gap: 8px">
+                    <strong class="bk-prod__name">{{ p.name }}</strong>
+                    <span class="bk-tag">{{ p.category }}</span>
+                  </div>
+                  <p class="bk-muted" style="margin: 2px 0 0">{{ p.description || 'No description' }}</p>
+                  @if (p.ingredients) { <p class="bk-muted" style="margin: 2px 0 0; font-size: 0.875rem">{{ p.ingredients }}</p> }
+                  <p class="bk-muted" style="margin: 4px 0 6px; font-size: 0.875rem">
+                    Added {{ formattedDate(p.created_at) }}, <span class="bk-stars">{{ ratingStars(p.rating) }}</span>
+                    @if (p.extra_info?.length) { , {{ p.extra_info.length }} extra {{ p.extra_info.length > 1 ? 'fields' : 'field' }} }
+                  </p>
+                  @if (stockBadge(p); as badge) {
+                    <span class="bk-stock" [style.background]="badge.bg" [style.color]="badge.color">{{ badge.label }}</span>
+                  }
+                </div>
+                <div class="bk-prod__side">
+                  <strong class="bk-prod__price">{{ formatPrice(p.price) }}</strong>
+                  <div class="bk-row" style="gap: 6px; justify-content: flex-end">
+                    <button type="button" class="bk-btn bk-btn--outline bk-btn--sm" (click)="startEdit(p)">Edit</button>
+                    @if (canManageUsers()) {
+                      <button type="button" class="bk-btn bk-btn--danger bk-btn--sm" (click)="confirmDelete(p)">Delete</button>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+
+            @else {
+              <h3>Editing "{{ editName() }}"</h3>
+              <div class="bk-prodform">
+                <div class="bk-prodform__img">
+                  <div class="bk-imgbox">
+                    @if (editImagePreview(); as preview) {
+                      <img [src]="preview" alt="New image" (error)="$any($event.target).style.display='none'" />
+                    } @else if (p.image_url) {
+                      <img [src]="p.image_url" alt="" (error)="$any($event.target).style.display='none'" />
+                    } @else { <span>No image</span> }
+                  </div>
+                  <input #editFile type="file" accept="image/*" hidden (change)="onEditFileSelected($event)" />
+                  <button type="button" class="bk-btn bk-btn--outline bk-btn--sm" (click)="editFile.click()">Replace image</button>
+                  <p class="bk-hint" style="text-align: center">Leave unchanged to keep the current one.</p>
+                </div>
+
+                <div class="bk-form">
+                  <ion-input class="bk-field" type="text" label="Name" label-placement="floating" fill="outline"
+                             [value]="editName()" (ionInput)="editName.set(($event.detail.value ?? '').toString())"></ion-input>
+
+                  <div class="bk-grid-3">
+                    <div class="bk-fieldset">
+                      <label class="bk-label" [for]="'ep-cat-' + p.id">Category</label>
+                      <select [id]="'ep-cat-' + p.id" class="bk-select" [value]="editCategory()" (change)="editCategory.set(selectValue($event))">
+                        @for (c of categoryNames(); track c) { <option [value]="c">{{ c }}</option> }
+                      </select>
+                    </div>
+                    <ion-input class="bk-field" type="number" min="0" step="0.01" label="Price (₱)" label-placement="floating" fill="outline"
+                               [value]="editPrice()" (ionInput)="editPrice.set(($event.detail.value ?? '').toString())"></ion-input>
+                    <ion-input class="bk-field" type="number" min="0" step="1" label="Stock" label-placement="floating" fill="outline"
+                               [value]="editStock()" (ionInput)="editStock.set(($event.detail.value ?? '').toString())"></ion-input>
+                  </div>
+
+                  <ion-input class="bk-field" type="text" label="Short description" label-placement="floating" fill="outline"
+                             [value]="editDescription()" (ionInput)="editDescription.set(($event.detail.value ?? '').toString())"></ion-input>
+
+                  <div class="bk-fieldset">
+                    <label class="bk-label" [for]="'ep-ing-' + p.id">Ingredients</label>
+                    <textarea [id]="'ep-ing-' + p.id" class="bk-textarea" rows="2" [value]="editIngredients()" (input)="editIngredients.set($any($event.target).value)"></textarea>
+                  </div>
+                  <div class="bk-fieldset">
+                    <label class="bk-label" [for]="'ep-nut-' + p.id">Nutritional value</label>
+                    <textarea [id]="'ep-nut-' + p.id" class="bk-textarea" rows="2" [value]="editNutritionalValue()" (input)="editNutritionalValue.set($any($event.target).value)"></textarea>
+                  </div>
+
+                  <div class="bk-fieldset">
+                    <div class="bk-row bk-row--between">
+                      <span class="bk-label" style="margin: 0">Additional information</span>
+                      <button type="button" class="bk-btn bk-btn--soft bk-btn--sm" (click)="addEditExtraItem()"><ion-icon [icon]="addIcon" aria-hidden="true"></ion-icon>Add field</button>
+                    </div>
+                    @for (item of editExtraInfo(); track item.id) {
+                      <div class="bk-extra">
+                        <ion-input class="bk-field" type="text" fill="outline" placeholder="Label" aria-label="Label"
+                                   [value]="item.label" (ionInput)="updateEditExtraItem(item.id, 'label', ($event.detail.value ?? '').toString())"></ion-input>
+                        <ion-input class="bk-field" type="text" fill="outline" placeholder="Detail" aria-label="Detail"
+                                   [value]="item.value" (ionInput)="updateEditExtraItem(item.id, 'value', ($event.detail.value ?? '').toString())"></ion-input>
+                        <button type="button" class="bk-iconbtn" style="width: 44px; height: 44px; font-size: 20px" (click)="removeEditExtraItem(item.id)" aria-label="Remove field"><ion-icon [icon]="closeIcon" aria-hidden="true"></ion-icon></button>
+                      </div>
+                    }
+                  </div>
+
+                  <div class="bk-row" style="justify-content: flex-end">
+                    <button type="button" class="bk-btn bk-btn--outline" (click)="cancelEdit()">Cancel</button>
+                    <button type="button" class="bk-btn bk-btn--dark" [disabled]="savingEdit()" (click)="handleUpdate(p)">{{ savingEdit() ? 'Saving…' : 'Save changes' }}</button>
+                  </div>
+                </div>
+              </div>
+            }
+          </article>
+        }
+      }
+    }
+
+    <!-- ══════════ CATEGORIES ══════════ -->
+    @if (tab() === 'categories') {
+      <p class="bk-muted">Categories group products on the shop screen. New ones show up in the product form straight away.</p>
+      @if (categoryFormError(); as err) { <p class="bk-alert" role="alert">{{ err }}</p> }
+
+      <section class="bk-card">
+        <div class="bk-promo">
+          <ion-input class="bk-field" style="margin: 0; flex: 1" type="text" label="New category name" label-placement="floating" fill="outline" placeholder="Gluten-free"
+                     [value]="newCategoryName()" (ionInput)="newCategoryName.set(($event.detail.value ?? '').toString())" (keydown.enter)="handleCreateCategory()"></ion-input>
+          <button type="button" class="bk-btn bk-btn--dark" style="height: 58px" [disabled]="savingCategory()" (click)="handleCreateCategory()">{{ savingCategory() ? 'Adding…' : 'Add' }}</button>
+        </div>
+      </section>
+
+      @if (categoriesLoading()) {
+        <div class="bk-empty"><div class="bk-spinner"></div><p>Loading categories…</p></div>
+      } @else if (categories().length === 0) {
+        <div class="bk-empty"><p>No categories yet. Add one above.</p></div>
+      } @else {
+        <div class="bk-grid-2">
+          @for (cat of categories(); track cat.id) {
+            <div class="bk-line" style="margin: 0">
+              <div class="bk-line__info"><p class="bk-line__name">{{ cat.name }}</p></div>
+              @if (canManageUsers()) {
+                <button type="button" class="bk-iconbtn" style="width: 44px; height: 44px; font-size: 20px" (click)="confirmDeleteCategory(cat)" [attr.aria-label]="'Delete ' + cat.name"><ion-icon [icon]="trashIcon" aria-hidden="true"></ion-icon></button>
+              }
+            </div>
+          }
+        </div>
+      }
+    }
+
+    <!-- ══════════ USERS ══════════ -->
+    @if (tab() === 'users') {
+      <p class="bk-muted">Give each team member a role. Changes take effect immediately.</p>
+
+      @if (usersError(); as err) {
+        <div class="bk-empty"><p>{{ err }}</p><button type="button" class="bk-btn bk-btn--dark" (click)="loadUsers()">Try again</button></div>
+      } @else if (usersLoading()) {
+        <div class="bk-empty"><div class="bk-spinner"></div><p>Loading users…</p></div>
+      } @else if (users().length === 0) {
+        <div class="bk-empty"><p>No accounts yet.</p></div>
+      } @else {
+        @for (u of users(); track u.id) {
+          <div class="bk-line">
+            <div class="bk-avatar" style="width: 44px; height: 44px; font-size: 1.15rem" aria-hidden="true">{{ (u.displayName || u.email)[0] }}</div>
+            <div class="bk-line__info">
+              <p class="bk-line__name">{{ u.displayName }} @if (u.id === user()?.id) { <span class="bk-muted" style="font-weight: 400">(you)</span> }</p>
+              <p class="bk-line__meta" style="overflow-wrap: anywhere">{{ u.email }}</p>
+            </div>
+            @if (u.id === user()?.id) {
+              <span class="bk-tag">{{ roleLabel(u.role) }}</span>
+            } @else {
+              <select class="bk-select" style="width: auto; min-width: 140px" [attr.aria-label]="'Role for ' + u.displayName" [value]="u.role" [disabled]="roleUpdatingId() === u.id" (change)="handleRoleChange(u, $event)">
+                <option value="customer">Customer</option>
+                <option value="store_admin">Store admin</option>
+                <option value="admin">Admin</option>
+              </select>
+            }
+          </div>
+        }
+      }
+    }
+
+    <!-- ══════════ INVENTORY ══════════ -->
+    @if (tab() === 'inventory') {
+      <p class="bk-muted">Quick stock changes. Quantities at or below {{ LOW_STOCK_THRESHOLD }} are flagged as low.</p>
+
+      <div class="bk-seg" style="max-width: 360px">
+        <button type="button" [class.is-active]="inventoryFilter() === 'all'" (click)="inventoryFilter.set('all')">All items</button>
+        <button type="button" [class.is-active]="inventoryFilter() === 'low'" (click)="inventoryFilter.set('low')">Low stock</button>
+      </div>
+
+      @if (productsError(); as err) {
+        <div class="bk-empty"><p>{{ err }}</p><button type="button" class="bk-btn bk-btn--dark" (click)="loadProducts()">Try again</button></div>
+      } @else if (productsLoading()) {
+        <div class="bk-empty"><div class="bk-spinner"></div><p>Loading inventory…</p></div>
+      } @else {
+        <div class="bk-grid-2">
+          @for (p of products(); track p.id) {
+            @if (inventoryFilter() === 'all' || stockNumber(p) <= LOW_STOCK_THRESHOLD) {
+              <div class="bk-line" style="margin: 0">
+                <div class="bk-line__info">
+                  <p class="bk-line__name">{{ p.name }}</p>
+                  <p class="bk-line__meta">{{ p.category }}</p>
+                  <span class="bk-stock" [style.background]="stockBadge(p).bg" [style.color]="stockBadge(p).color">{{ stockBadge(p).label }}</span>
+                </div>
+                <div class="bk-stepper bk-stepper--sm" role="group" [attr.aria-label]="'Stock of ' + p.name">
+                  <button type="button" (click)="adjustStock(p, -1)" aria-label="Decrease stock">−</button>
+                  <input type="number" min="0" step="1" class="bk-stepper__input" [value]="stockNumber(p)" (change)="setStockQuantity(p, $event)" [attr.aria-label]="'Stock quantity of ' + p.name" />
+                  <button type="button" (click)="adjustStock(p, 1)" aria-label="Increase stock">+</button>
+                </div>
+              </div>
+            }
+          }
+        </div>
+        @if (products().length === 0) { <div class="bk-empty"><p>No products in the catalog yet.</p></div> }
+      }
+    }
+
+    <!-- ══════════ ORDERS ══════════ -->
+    @if (tab() === 'orders') {
+      <p class="bk-muted">Set any order's status directly.</p>
+      @if (statusError(); as err) { <p class="bk-alert" role="alert">{{ err }}</p> }
+
+      @if (ordersError(); as err) {
+        <div class="bk-empty"><p>{{ err }}</p><button type="button" class="bk-btn bk-btn--dark" (click)="loadOrders()">Try again</button></div>
+      } @else if (ordersLoading()) {
+        <div class="bk-empty"><div class="bk-spinner"></div><p>Loading orders…</p></div>
+      } @else if (orders().length === 0) {
+        <div class="bk-empty"><h3>No orders yet</h3><p>New orders will appear here.</p></div>
+      } @else {
+        @for (o of orders(); track o.id) {
+          <article class="bk-card bk-row bk-row--between" style="align-items: flex-start">
+            <div style="flex: 1 1 260px; min-width: 0">
+              <p class="bk-order__no">#{{ shortOrderId(o) }} <span class="bk-muted" style="font-weight: 400">{{ o.fulfillment_type === 'pickup' ? 'Pickup' : 'Delivery' }}</span></p>
+              <p class="bk-order__meta">{{ o.customer_name }}, {{ o.phone }}</p>
+              <p class="bk-order__meta">{{ formatOrderDate(o.created_at) }}</p>
+              <p class="bk-order__meta">{{ o.items.length }} {{ o.items.length === 1 ? 'item' : 'items' }}, {{ paymentLabel(o.payment_method) }} · <b [style.color]="o.payment_status === 'paid' ? '#2E7D4F' : (o.payment_status === 'failed' ? '#B3261E' : '#B7791F')">{{ paymentStatusText(o) }}</b>, <strong style="color: var(--bakery-dark)">{{ formatPrice(o.total) }}</strong></p>
+            </div>
+            <div style="flex: 0 1 200px; display: grid; gap: 8px">
+              <span class="bk-stock" [style.background]="statusChipColor(o.status).bg" [style.color]="statusChipColor(o.status).fg" style="justify-self: start">{{ statusOptionLabel(o.status) }}</span>
+              <select class="bk-select" [attr.aria-label]="'Status of order ' + shortOrderId(o)" [value]="o.status" [disabled]="statusSavingId() === o.id || o.status === 'cancelled'" (change)="setOrderStatus(o, $any($event.target).value)">
+                @for (s of statuses; track s) { <option [value]="s">{{ statusOptionLabel(s) }}</option> }
+              </select>
+              @if (statusSavingId() === o.id) { <span class="bk-hint">Saving…</span> }
+              @if (o.status === 'cancelled') { <span class="bk-hint">Cancelled orders can't be reopened.</span> }
+            </div>
+          </article>
+        }
+      }
+    }
+
+    <!-- ══════════ SALES ══════════ -->
+    @if (tab() === 'sales') {
+      <p class="bk-muted">Live figures from real orders. Cancelled orders are excluded.</p>
+
+      @if (ordersLoading()) {
+        <div class="bk-empty"><div class="bk-spinner"></div><p>Crunching numbers…</p></div>
+      } @else {
+        <div class="bk-stats">
+          <div class="bk-stat"><span>Total revenue</span><strong>{{ formatPrice(salesRevenue()) }}</strong></div>
+          <div class="bk-stat"><span>From finished orders</span><strong>{{ formatPrice(salesDeliveredRevenue()) }}</strong></div>
+          <div class="bk-stat"><span>Orders</span><strong>{{ salesOrderCount() }}</strong><span>{{ salesActiveCount() }} active</span></div>
+          <div class="bk-stat"><span>Payment</span><strong>{{ salesPaymentSplit().cod }} / {{ salesPaymentSplit().online }}</strong><span>cash / online</span></div>
+        </div>
+
+        <div class="bk-sec-head"><h2>Last 7 days</h2></div>
+        <section class="bk-card">
+          <div class="bk-bars">
+            @for (d of salesLast7Days(); track d.label) {
+              <div class="bk-bars__col">
+                <span class="bk-bars__val">₱{{ d.revenue.toFixed(0) }}</span>
+                <div class="bk-bars__bar" [style.height.px]="chartHeight(d.revenue)"></div>
+                <span class="bk-bars__lbl">{{ d.label }}</span>
+              </div>
+            }
+          </div>
+        </section>
+
+        <div class="bk-sec-head"><h2>Best sellers</h2></div>
+        @if (salesTopProducts().length === 0) {
+          <div class="bk-empty"><p>No sales yet. Orders will populate this report.</p></div>
+        } @else {
+          @for (p of salesTopProducts(); track p.name; let i = $index) {
+            <div class="bk-line">
+              <span class="bk-avatar" style="width: 40px; height: 40px; font-size: 1.1rem" aria-hidden="true">{{ i + 1 }}</span>
+              <div class="bk-line__info">
+                <p class="bk-line__name">{{ p.name }}</p>
+                <p class="bk-line__meta">{{ p.qty }} {{ p.qty === 1 ? 'unit' : 'units' }}, {{ formatPrice(p.revenue) }}</p>
+              </div>
+            </div>
+          }
+        }
+      }
+    }
+
+  </div>
+</ion-content>

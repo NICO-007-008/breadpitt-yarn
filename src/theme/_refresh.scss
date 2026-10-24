@@ -1,0 +1,2264 @@
+// ═════════════════════════════════════════════════════════════════════════════
+// _refresh.scss — UI refresh layer · Knead to Know
+//
+// Loaded AFTER _page-shared, so it wins ties. Everything new is prefixed `bk-`
+// so it can never collide with the older `bakery-*` classes still used by the
+// admin / profile / about pages.
+//
+// Design rules used here
+//  · Same palette as before. Roles changed: crust brown (#4D2A00) is the strong
+//    action colour, gold (#F2A900) is the accent, butter is the page.
+//  · No hard outlines or offset block shadows on new surfaces — soft surfaces.
+//  · Young Serif for headings only. Inter for everything you read or tap.
+//  · Sentence case everywhere. Nothing below 13px.
+// ═════════════════════════════════════════════════════════════════════════════
+
+$font: var(--bakery-font);
+$display: var(--bakery-font-display);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 1 · Shell: toolbar, bottom reserve, shared keyframes
+// ─────────────────────────────────────────────────────────────────────────────
+
+ion-header ion-toolbar {
+  --border-width: 0;
+
+  ion-title {
+    font-family: $display;
+    font-weight: 400;
+    font-size: 1.25rem;
+    letter-spacing: 0;
+  }
+}
+
+// Space the chrome (floating nav + cart bar) needs. The classes are toggled by
+// <app-bottom-nav> and <app-floating-cart>.
+body.has-bottom-nav {
+  --bakery-reserve: calc(var(--bakery-nav-h) + 28px + var(--bakery-safe-bottom));
+}
+body.has-bottom-nav.has-cart-bar {
+  --bakery-reserve: calc(var(--bakery-nav-h) + 28px + 64px + var(--bakery-safe-bottom));
+}
+// No nav (staff, or hidden routes) but a cart bar: reserve just the bar.
+body.has-cart-bar:not(.has-bottom-nav) {
+  --bakery-reserve: calc(84px + var(--bakery-safe-bottom));
+}
+body.has-bottom-nav .bk-cartbar {
+  bottom: calc(var(--bakery-nav-h) + 20px + var(--bakery-safe-bottom));
+}
+ion-content.page-content {
+  --padding-bottom: var(--bakery-reserve);
+}
+
+@keyframes bk-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes bk-rise {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes bk-sheet-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+@keyframes bk-bump {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+@keyframes bk-pulse {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2 · Layout helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+.bk-wrap {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 16px 16px;
+}
+
+.bk-sec-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 28px 0 12px;
+
+  h2 {
+    margin: 0;
+    font-family: $display;
+    font-weight: 400;
+    font-size: 1.35rem;
+    line-height: 1.2;
+    color: var(--bakery-dark);
+  }
+
+  a {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--bakery-dark);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    white-space: nowrap;
+  }
+}
+
+// Horizontal scroller that bleeds to the screen edges inside .bk-wrap.
+.bk-rail {
+  display: flex;
+  gap: 12px;
+  margin: 0 -16px;
+  padding: 4px 16px 16px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scroll-padding-left: 16px;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar { display: none; }
+
+  > * { flex: 0 0 auto; scroll-snap-align: start; }
+}
+
+// Empty / error / no-results block
+.bk-state {
+  text-align: center;
+  padding: 40px 24px;
+
+  h3 {
+    margin: 0 0 6px;
+    font-family: $display;
+    font-weight: 400;
+    font-size: 1.25rem;
+    color: var(--bakery-dark);
+  }
+
+  p {
+    margin: 0 0 18px;
+    font-size: 0.9375rem;
+    color: var(--bakery-text-secondary);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 3 · Buttons
+// ─────────────────────────────────────────────────────────────────────────────
+
+.bk-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: var(--bakery-radius-pill);
+  font-family: $font;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: transform var(--bakery-dur-fast) var(--bakery-ease),
+    background-color var(--bakery-dur-fast) var(--bakery-ease);
+
+  &:active { transform: scale(0.97); }
+
+  &[disabled] { opacity: 0.5; pointer-events: none; }
+
+  &--dark {
+    background: var(--bakery-dark);
+    color: var(--bakery-card);
+    &:hover { background: #3a2000; }
+  }
+
+  &--gold {
+    background: var(--bakery-navbar);
+    color: var(--bakery-dark);
+    &:hover { background: #f4b733; }
+  }
+
+  &--soft {
+    background: var(--bakery-button);
+    color: var(--bakery-dark);
+    &:hover { background: #dcc9a0; }
+  }
+
+  &--block { display: flex; width: 100%; }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 4 · Bottom navigation (floating pill) + cart bar
+// ─────────────────────────────────────────────────────────────────────────────
+
+.bk-nav {
+  position: fixed;
+  z-index: 900;
+  left: 16px;
+  right: 16px;
+  bottom: calc(12px + var(--bakery-safe-bottom));
+  max-width: 520px;
+  height: var(--bakery-nav-h);
+  margin: 0 auto;
+  padding: 6px;
+  display: flex;
+  gap: 4px;
+  background: var(--bakery-dark);
+  border-radius: 26px;
+  box-shadow: 0 14px 30px -12px rgba(45, 24, 0, 0.7);
+  animation: bk-rise 0.3s var(--bakery-ease) both;
+
+  &.is-hidden { display: none; }
+
+  &__tab {
+    position: relative;
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    border-radius: 20px;
+    color: rgba(249, 230, 168, 0.8);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color var(--bakery-dur) var(--bakery-ease),
+      color var(--bakery-dur) var(--bakery-ease);
+
+    &.is-active {
+      background: var(--bakery-navbar);
+      color: var(--bakery-dark);
+    }
+
+    &:focus-visible {
+      outline: 3px solid var(--bakery-navbar);
+      outline-offset: 1px;
+    }
+  }
+
+  &__icon {
+    position: relative;
+    display: grid;
+    font-size: 22px;
+    line-height: 0;
+  }
+
+  &__badge {
+    position: absolute;
+    top: -7px;
+    right: -11px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    display: grid;
+    place-items: center;
+    border-radius: 9px;
+    background: var(--bakery-status-cancelled);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 800;
+    line-height: 1;
+    box-shadow: 0 0 0 2px var(--bakery-dark);
+  }
+
+  &__dot {
+    position: absolute;
+    top: -3px;
+    right: -5px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--bakery-status-cancelled);
+    box-shadow: 0 0 0 2px var(--bakery-dark);
+  }
+
+  // Active tab sits on gold, so the badge ring has to match.
+  &__tab.is-active &__badge,
+  &__tab.is-active &__dot {
+    box-shadow: 0 0 0 2px var(--bakery-navbar);
+  }
+}
+
+.bk-cartbar {
+  position: fixed;
+  z-index: 899;
+  left: 16px;
+  right: 16px;
+  bottom: calc(20px + var(--bakery-safe-bottom));
+  max-width: 520px;
+  height: 56px;
+  margin: 0 auto;
+  padding: 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 0;
+  border-radius: var(--bakery-radius-pill);
+  background: var(--bakery-navbar);
+  color: var(--bakery-dark);
+  box-shadow: 0 12px 26px -12px rgba(77, 42, 0, 0.7);
+  font-family: $font;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  cursor: pointer;
+  animation: bk-rise 0.28s var(--bakery-ease) both;
+
+  &.bump { animation: bk-bump 0.35s var(--bakery-ease); }
+
+  &__count {
+    min-width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--bakery-dark);
+    color: var(--bakery-navbar);
+    font-weight: 800;
+  }
+
+  &__label { flex: 1; text-align: left; }
+
+  &__total { padding-right: 16px; font-weight: 800; }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 5 · Product card
+// ─────────────────────────────────────────────────────────────────────────────
+
+// <app-product-card> is a wrapper element between the rail/grid and the card.
+// It must be a flex box so the card inside stretches to the row's full height;
+// otherwise a card with a two-line name ends up taller than its neighbours.
+app-product-card {
+  display: flex;
+  min-width: 0;
+
+  > .bk-pcard { flex: 1 1 auto; min-width: 0; }
+}
+
+.bk-pcard {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  background: var(--bakery-card);
+  border: 1px solid var(--bakery-card-border);
+  border-radius: 22px;
+  box-shadow: var(--bakery-card-shadow);
+  overflow: hidden;
+  transition: transform var(--bakery-dur-fast) var(--bakery-ease);
+
+  &:active { transform: scale(0.985); }
+
+  &:has(.bk-pcard__hit:focus-visible) {
+    outline: var(--bakery-focus-outline);
+    outline-offset: 2px;
+  }
+
+  &--rail { width: 164px; }
+
+  // Invisible button that makes the whole card tappable (stretched target).
+  &__hit {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    &:focus-visible { outline: none; }
+  }
+
+  &__media {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    background: var(--bakery-button);
+
+    img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  &__fallback {
+    object-fit: contain !important;
+    padding: 18%;
+  }
+
+  &__flag {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    padding: 4px 10px;
+    border-radius: var(--bakery-radius-pill);
+    background: var(--bakery-card);
+    color: var(--bakery-dark);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    line-height: 1.3;
+
+    &--out {
+      background: var(--bakery-dark);
+      color: var(--bakery-card);
+    }
+  }
+
+  &--sold-out &__media img:not(.bk-pcard__fallback) {
+    filter: grayscale(1);
+    opacity: 0.55;
+  }
+
+  &__body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 12px 12px 12px 14px;
+  }
+
+  &__name {
+    margin: 0;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--bakery-dark);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8125rem;
+    color: var(--bakery-text-secondary);
+    min-height: 20px;
+  }
+
+  &__rating {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-weight: 700;
+    color: var(--bakery-dark);
+
+    ion-icon { font-size: 13px; color: var(--bakery-navbar); }
+  }
+
+  &__foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 6px 8px;
+    margin-top: auto;
+    padding-top: 8px;
+  }
+
+  &__price {
+    min-width: 0;
+    font-size: 1.0625rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: var(--bakery-dark);
+  }
+
+  &__add {
+    position: relative;
+    z-index: 2;
+    flex: 0 0 auto;
+    margin-left: auto;
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--bakery-dark);
+    color: var(--bakery-card);
+    font-size: 22px;
+    cursor: pointer;
+    transition: transform var(--bakery-dur-fast) var(--bakery-ease),
+      background-color var(--bakery-dur) var(--bakery-ease);
+
+    &:active { transform: scale(0.9); }
+    &.is-added { background: var(--bakery-status-finished); }
+    &[disabled] { opacity: 0.35; cursor: default; }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 6 · Home
+// ─────────────────────────────────────────────────────────────────────────────
+
+.bk-home-head {
+  padding: 22px 0 16px;
+
+  h1 {
+    margin: 0 0 4px;
+    font-family: $display;
+    font-weight: 400;
+    font-size: 1.9rem;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    color: var(--bakery-dark);
+  }
+
+  p {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--bakery-text-secondary);
+  }
+}
+
+.bk-searchpill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 52px;
+  padding: 0 18px;
+  border: 1.5px solid var(--bakery-card-border);
+  border-radius: var(--bakery-radius-pill);
+  background: var(--bakery-input-bg);
+  color: var(--bakery-text-secondary);
+  font-size: 1rem;
+  text-decoration: none;
+
+  ion-icon { font-size: 20px; color: var(--bakery-dark); }
+}
+
+// Featured product — the one loud thing on Home.
+.bk-feature {
+  position: relative;
+  isolation: isolate;
+  width: 100%;              // definite width: otherwise min-height + aspect-ratio can widen the card
+  margin-top: 20px;
+  min-height: 280px;
+  aspect-ratio: 5 / 4;
+  border-radius: 28px;
+  overflow: hidden;
+  background: var(--bakery-dark);
+  color: var(--bakery-card);
+  box-shadow: var(--bakery-card-shadow);
+
+  &:has(.bk-feature__hit:focus-visible) {
+    outline: var(--bakery-focus-outline);
+    outline-offset: 3px;
+  }
+
+  &__img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to top,
+      rgba(45, 24, 0, 0.92) 0%,
+      rgba(45, 24, 0, 0.5) 40%,
+      rgba(45, 24, 0, 0) 70%
+    );
+  }
+
+  &__hit {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    &:focus-visible { outline: none; }
+  }
+
+  &__tag {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    z-index: 2;
+    padding: 6px 14px;
+    border-radius: var(--bakery-radius-pill);
+    background: var(--bakery-navbar);
+    color: var(--bakery-dark);
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+
+  &__body {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 20px;
+    pointer-events: none; // taps fall through to __hit, except the CTA
+  }
+
+  &__name {
+    margin: 0 0 6px;
+    font-family: $display;
+    font-weight: 400;
+    font-size: 1.7rem;
+    line-height: 1.1;
+    color: var(--bakery-card);
+  }
+
+  &__meta {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.875rem;
+    color: rgba(255, 244, 214, 0.88);
+  }
+
+  &__cta {
+    pointer-events: auto;
+    flex: 0 0 auto;
+  }
+}
+
+.bk-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 84px;
+  color: var(--bakery-dark);
+  text-decoration: none;
+
+  &__img {
+    display: grid;
+    place-items: center;
+    width: 76px;
+    height: 76px;
+    border-radius: 26px;
+    background: var(--bakery-button);
+    overflow: hidden;
+    transition: transform var(--bakery-dur-fast) var(--bakery-ease);
+
+    img { width: 100%; height: 100%; object-fit: cover; }
+    ion-icon { font-size: 28px; }
+  }
+
+  &:active &__img { transform: scale(0.94); }
+
+  &__label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+}
+
+.bk-occasion {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  margin-top: 12px;
+  padding: 26px 24px;
+  border-radius: 28px;
+  background: var(--bakery-dark);
+
+  h2 {
+    margin: 0;
+    font-family: $display;
+    font-weight: 400;
+    font-size: 1.5rem;
+    line-height: 1.15;
+    color: var(--bakery-card);
+  }
+
+  p {
+    margin: 0;
+    max-width: 34ch;
+    font-size: 0.9375rem;
+    color: rgba(249, 230, 168, 0.88);
+  }
+}
+
+.bk-news {
+  margin-top: 28px;
+  padding: 22px 20px;
+  border-radius: 24px;
+  background: var(--bakery-card);
+  border: 1px solid var(--bakery-card-border);
+
+  h3 {
+    margin: 0 0 4px;
+    font-family: $display;
+    font-weight: 400;
+    font-size: 1.2rem;
+    color: var(--bakery-dark);
+  }
+
+  p {
+    margin: 0 0 14px;
+    font-size: 0.9375rem;
+    color: var(--bakery-text-secondary);
+  }
+
+  &__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    input { flex: 1 1 200px; }
+    .bk-btn { flex: 0 0 auto; }
+  }
+}
+
+.bk-input {
+  min-width: 0;
+  height: 48px;
+  padding: 0 16px;
+  border: 1.5px solid var(--bakery-card-border);
+  border-radius: var(--bakery-radius-pill);
+  background: var(--bakery-input-bg);
+  color: var(--bakery-dark);
+  font-family: $font;
+  font-size: 1rem;
+
+  &::placeholder { color: var(--bakery-text-muted); }
+  &:focus { outline: none; border-color: var(--bakery-burnt); box-shadow: var(--bakery-focus-ring); }
+}
+
+// Loading placeholders
+.bk-skel {
+  border-radius: 22px;
+  background: var(--bakery-button);
+  animation: bk-pulse 1.4s ease-in-out infinite;
+
+  &--feature { height: 280px; margin-top: 20px; border-radius: 28px; }
+  &--card    { width: 164px; height: 232px; }
+  &--tile    { width: 76px; height: 76px; border-radius: 26px; }
+  &--grid    { height: 250px; }
+}
+
+.bk-grid--spaced { margin-top: 16px; }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 7 · Shop (catalog)
+// ─────────────────────────────────────────────────────────────────────────────
+
+.bk-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  margin: 0 -16px;            // full-bleed band so scrolling cards never show at the edges
+  padding: 12px 16px 8px;
+  background: var(--bakery-base);
+}
+
+.bk-search {
+  display: flex;
+  gap: 8px;
+
+  &__field {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+
+    > ion-icon {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 20px;
+      color: var(--bakery-dark);
+      pointer-events: none;
+    }
+
+    input {
+      width: 100%;
+      height: 52px;
+      padding: 0 48px;
+      border: 1.5px solid var(--bakery-card-border);
+      border-radius: var(--bakery-radius-pill);
+      background: var(--bakery-input-bg);
+      color: var(--bakery-dark);
+      font-family: $font;
+      font-size: 1rem;
+      appearance: none;
+
+      &::placeholder { color: var(--bakery-text-muted); }
+      &:focus {
+        outline: none;
+        border-color: var(--bakery-burnt);
+        box-shadow: var(--bakery-focus-ring);
+      }
+    }
+  }
+
+  &__clear {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--bakery-dark);
+    font-size: 20px;
+    cursor: pointer;
+  }
+}
+
+.bk-iconbtn {
+  position: relative;
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1.5px solid var(--bakery-card-border);
+  border-radius: 50%;
+  background: var(--bakery-input-bg);
+  color: var(--bakery-dark);
+  font-size: 22px;
+  cursor: pointer;
+
+  &.is-on { background: var(--bakery-dark); border-color: var(--bakery-dark); color: var(--bakery-card); }
+
+  &__dot {
+    position: absolute;
+    top: 11px;
+    right: 11px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--bakery-burnt);
+    box-shadow: 0 0 0 2px var(--bakery-input-bg);
+  }
+  &.is-on &__dot { box-shadow: 0 0 0 2px var(--bakery-dark); }
+}
+
+.bk-chips {
+  display: flex;
+  gap: 8px;
+  margin: 0 -16px;
+  padding: 10px 16px 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar { display: none; }
+}
+
+.bk-chip {
+  flex: 0 0 auto;
+  height: 40px;
+  padding: 0 18px;
+  border: 1.5px solid var(--bakery-card-border);
+  border-radius: var(--bakery-radius-pill);
+  background: transparent;
+  color: var(--bakery-dark);
+  font-family: $font;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--bakery-dur-fast) var(--bakery-ease),
+    color var(--bakery-dur-fast) var(--bakery-ease);
+
+  &.is-active {
+    background: var(--bakery-dark);
+    border-color: var(--bakery-dark);
+    color: var(--bakery-card);
+  }
+}
+
+.bk-panel {
+  display: grid;
+  gap: 18px;
+  margin: 8px 0 4px;
+  padding: 18px 16px;
+  border: 1px solid var(--bakery-card-border);
+  border-radius: 22px;
+  background: var(--bakery-card);
+
+  h3 {
+    margin: 0 0 8px;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--bakery-dark);
+  }
+
+  &__chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  &__range {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    input {
+      flex: 1;
+      min-width: 0;
+      height: 46px;
+      padding: 0 14px;
+      border: 1.5px solid var(--bakery-card-border);
+      border-radius: 14px;
+      background: var(--bakery-input-bg);
+      color: var(--bakery-dark);
+      font-family: $font;
+      font-size: 1rem;
+      &:focus { outline: none; border-color: var(--bakery-burnt); box-shadow: var(--bakery-focus-ring); }
+    }
+  }
+
+  &__hint { margin: 6px 0 0; font-size: 0.8125rem; color: var(--bakery-text-secondary); }
+}
+
+.bk-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 12px 0 0;
+  font-size: 0.875rem;
+  color: var(--bakery-text-secondary);
+
+  strong { color: var(--bakery-dark); }
+
+  button {
+    min-height: 44px;
+    padding: 0 4px;
+    border: 0;
+    background: none;
+    color: var(--bakery-dark);
+    font-family: $font;
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+}
+
+.bk-group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 24px 0 12px;
+
+  h2 {
+    margin: 0;
+    font-family: $display;
+    font-weight: 400;
+    font-size: 1.35rem;
+    color: var(--bakery-dark);
+  }
+
+  span { font-size: 0.875rem; color: var(--bakery-text-secondary); }
+}
+
+.bk-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+
+  @media (min-width: 600px) { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+  @media (min-width: 900px) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 8 · Product detail sheet
+// ─────────────────────────────────────────────────────────────────────────────
+
+.bk-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: rgba(45, 24, 0, 0.55);
+  animation: bk-fade 0.2s ease-out both;
+}
+
+.bk-sheet {
+  position: fixed;
+  z-index: 1101;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-width: 520px;
+  max-height: 92vh;
+  max-height: 92dvh;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bakery-card);
+  border-radius: 28px 28px 0 0;
+  box-shadow: 0 -12px 40px rgba(45, 24, 0, 0.3);
+  animation: bk-sheet-up 0.3s var(--bakery-ease) both;
+
+  &__media {
+    position: relative;
+    flex: 0 0 auto;
+    aspect-ratio: 16 / 11;
+    max-height: 38vh;
+    width: 100%;
+    background: var(--bakery-button);
+
+    img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  }
+
+  &__fallback { object-fit: contain !important; padding: 12%; }
+
+  // Small grab handle so it reads as a sheet that can be dismissed.
+  &__grab {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    width: 40px;
+    height: 5px;
+    margin-left: -20px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 1px 4px rgba(45, 24, 0, 0.35);
+    pointer-events: none;
+  }
+
+  &__close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--bakery-card);
+    color: var(--bakery-dark);
+    font-size: 22px;
+    box-shadow: 0 4px 12px -4px rgba(45, 24, 0, 0.5);
+    cursor: pointer;
+  }
+
+  &__scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 18px 20px 8px;
+  }
+
+  &__cat {
+    margin: 0 0 4px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--bakery-text-secondary);
+  }
+
+  &__name {
+    margin: 0 0 10px;
+    font-family: $display;
+    font-weight: 400;
+    font-size: 1.65rem;
+    line-height: 1.12;
+    color: var(--bakery-dark);
+  }
+
+  &__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 14px;
+    margin-bottom: 14px;
+  }
+
+  &__price {
+    font-size: 1.35rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: var(--bakery-dark);
+  }
+
+  &__rating {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--bakery-dark);
+    ion-icon { color: var(--bakery-navbar); }
+  }
+
+  &__flag {
+    padding: 4px 12px;
+    border-radius: var(--bakery-radius-pill);
+    background: var(--bakery-button);
+    color: var(--bakery-dark);
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+
+  &__desc {
+    margin: 0 0 8px;
+    max-width: 60ch;
+    font-size: 1rem;
+    line-height: 1.55;
+    color: var(--bakery-text);
+  }
+
+  &__sec {
+    padding: 14px 0;
+    border-top: 1px solid var(--bakery-card-border);
+
+    h3 { margin: 0 0 4px; font-size: 0.9375rem; font-weight: 700; color: var(--bakery-dark); }
+    p  { margin: 0; font-size: 0.9375rem; line-height: 1.5; color: var(--bakery-text-secondary); }
+  }
+
+  &__foot {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px calc(16px + var(--bakery-safe-bottom));
+    background: var(--bakery-card);
+    border-top: 1px solid var(--bakery-card-border);
+    box-shadow: 0 -8px 16px -12px rgba(45, 24, 0, 0.35);
+  }
+
+  &__add {
+    flex: 1;
+    min-width: 0;
+    justify-content: space-between;
+    padding: 0 16px;
+    white-space: normal;
+    line-height: 1.2;
+  }
+}
+
+.bk-stepper {
+  display: inline-flex;
+  align-items: center;
+  height: 52px;
+  border-radius: var(--bakery-radius-pill);
+  background: var(--bakery-button);
+
+  button {
+    width: 48px;
+    height: 52px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--bakery-dark);
+    font-size: 20px;
+    cursor: pointer;
+    &[disabled] { opacity: 0.35; cursor: default; }
+  }
+
+  span {
+    min-width: 28px;
+    text-align: center;
+    font-size: 1.0625rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 9 · Sign in / Create account
+// ─────────────────────────────────────────────────────────────────────────────
+
+.bk-auth {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 28px 20px 48px;
+
+  &__brand {
+    text-align: center;
+    margin-bottom: 26px;
+
+    h1 {
+      margin: 18px 0 6px;
+      font-family: $display;
+      font-weight: 400;
+      font-size: 1.9rem;
+      line-height: 1.1;
+      color: var(--bakery-dark);
+    }
+
+    p {
+      margin: 0 auto;
+      max-width: 32ch;
+      font-size: 1rem;
+      color: var(--bakery-text-secondary);
+    }
+  }
+
+  &__logo {
+    display: block;
+    width: 96px;
+    height: 96px;
+    margin: 0 auto;
+    border-radius: 30px;
+    object-fit: cover;
+    box-shadow: var(--bakery-card-shadow);
+  }
+
+  &__alt {
+    margin: 22px 0 0;
+    text-align: center;
+    font-size: 0.9375rem;
+    color: var(--bakery-text-secondary);
+
+    a { color: var(--bakery-dark); font-weight: 700; text-underline-offset: 3px; }
+  }
+}
+
+ion-input.bk-field {
+  --background: var(--bakery-input-bg);
+  --color: var(--bakery-dark);
+  --border-color: rgba(77, 42, 0, 0.35);
+  --border-radius: 14px;
+  --highlight-color-focused: var(--bakery-burnt);
+  --padding-start: 14px;
+  --padding-end: 14px;
+  min-height: 58px;
+  margin-bottom: 14px;
+  font-size: 1rem;
+}
+
+.bk-alert {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: var(--bakery-error-bg);
+  border: 1px solid var(--bakery-error-border);
+  color: var(--bakery-dark);
+  font-size: 0.9375rem;
+
+  &--ok {
+    background: var(--bakery-success-bg);
+    border-color: var(--bakery-success-border);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 10 · Desktop / tablet polish
+// ─────────────────────────────────────────────────────────────────────────────
+
+@media (min-width: 900px) {
+  .bk-feature { aspect-ratio: 16 / 7; }
+  .bk-occasion {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 28px 32px;
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 11 · Global Ionic controls — restyles every page that still uses <ion-button>
+// ═════════════════════════════════════════════════════════════════════════════
+
+ion-button {
+  --background: var(--bakery-dark);
+  --background-hover: #3a2000;
+  --background-activated: #2d1800;
+  --background-focused: #3a2000;
+  --color: var(--bakery-card);
+  --color-hover: var(--bakery-card);
+  --color-activated: var(--bakery-card);
+  --color-focused: var(--bakery-card);
+  --border-radius: var(--bakery-radius-pill);
+  --padding-start: 20px;
+  --padding-end: 20px;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
+
+  &::part(native) { border: 0; box-shadow: none; }
+  &:hover::part(native),
+  &:active::part(native),
+  &.ion-activated::part(native) { transform: none; box-shadow: none; }
+
+  &[fill='outline'] {
+    --background: transparent;
+    --background-hover: rgba(77, 42, 0, 0.08);
+    --background-activated: rgba(77, 42, 0, 0.14);
+    --background-focused: rgba(77, 42, 0, 0.08);
+    --color: var(--bakery-dark);
+    --color-hover: var(--bakery-dark);
+    --color-activated: var(--bakery-dark);
+    --color-focused: var(--bakery-dark);
+
+    &::part(native) { border: 1.5px solid var(--border-color, var(--bakery-dark)); box-shadow: none; }
+  }
+
+  &[fill='clear'] {
+    --background: transparent;
+    --background-hover: rgba(77, 42, 0, 0.08);
+    --background-activated: rgba(77, 42, 0, 0.14);
+    --background-focused: rgba(77, 42, 0, 0.08);
+    --color: var(--bakery-dark);
+    --color-hover: var(--bakery-dark);
+    --color-activated: var(--bakery-dark);
+    --color-focused: var(--bakery-dark);
+  }
+
+  &[disabled] {
+    opacity: 0.45;
+    &::part(native) { border-style: solid; box-shadow: none; }
+  }
+}
+
+// Buttons placed in a toolbar sit on gold: keep them flat.
+ion-buttons ion-button {
+  --background: transparent;
+  --background-hover: rgba(77, 42, 0, 0.1);
+  --color: var(--bakery-dark);
+  --color-hover: var(--bakery-dark);
+  --padding-start: 12px;
+  --padding-end: 12px;
+}
+
+ion-textarea {
+  border: 1.5px solid rgba(77, 42, 0, 0.3);
+  border-radius: 14px;
+  margin-bottom: 14px;
+}
+
+ion-alert {
+  --background: var(--bakery-card);
+  --max-width: 340px;
+  .alert-wrapper { border-radius: 24px; }
+  .alert-title { font-family: $display; font-weight: 400; }
+  .alert-button { color: var(--bakery-dark); font-weight: 700; }
+}
+
+// Order / stock status pills (existing class names, softer look, readable size)
+.status-badge {
+  white-space: nowrap;
+  padding: 4px 12px;
+  border: 0 !important;
+  font-size: 0.8125rem;
+  letter-spacing: 0;
+  text-transform: none;
+
+  &--teal {
+    background: rgba(14, 116, 144, 0.13);
+    color: #0e7490;
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 12 · Page furniture shared by the secondary screens
+// ═════════════════════════════════════════════════════════════════════════════
+
+.bk-page-head {
+  padding: 22px 0 8px;
+
+  h1 {
+    margin: 0 0 4px;
+    font-family: $display;
+    font-weight: 400;
+    font-size: 1.75rem;
+    line-height: 1.12;
+    color: var(--bakery-dark);
+  }
+  p {
+    margin: 0;
+    max-width: 52ch;
+    font-size: 1rem;
+    color: var(--bakery-text-secondary);
+  }
+}
+
+.bk-card {
+  padding: 18px;
+  margin: 0 0 14px;
+  border: 1px solid var(--bakery-card-border);
+  border-radius: 22px;
+  background: var(--bakery-card);
+  box-shadow: var(--bakery-card-shadow);
+
+  &--flat { box-shadow: none; }
+  &--dark { background: var(--bakery-dark); color: var(--bakery-card); border-color: transparent; }
+
+  h2, h3 { margin: 0 0 10px; font-family: $display; font-weight: 400; color: var(--bakery-dark); }
+  h2 { font-size: 1.25rem; }
+  h3 { font-size: 1.1rem; }
+  &--dark h2, &--dark h3 { color: var(--bakery-card); }
+}
+
+.bk-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0 4px;
+
+  @media (min-width: 700px) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+.bk-stat {
+  padding: 14px 16px;
+  border-radius: 20px;
+  background: var(--bakery-card);
+  border: 1px solid var(--bakery-card-border);
+
+  strong {
+    display: block;
+    font-family: $display;
+    font-weight: 400;
+    font-size: 1.6rem;
+    line-height: 1.1;
+    color: var(--bakery-dark);
+    font-variant-numeric: tabular-nums;
+  }
+  span { font-size: 0.875rem; color: var(--bakery-text-secondary); }
+}
+
+// Segmented control (replaces the underline tab bars)
+.bk-seg {
+  display: flex;
+  gap: 4px;
+  margin: 16px 0;
+  padding: 4px;
+  border-radius: var(--bakery-radius-pill);
+  background: rgba(77, 42, 0, 0.08);
+
+  button {
+    flex: 1;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: var(--bakery-radius-pill);
+    background: transparent;
+    color: var(--bakery-dark);
+    font-family: $font;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color var(--bakery-dur-fast) var(--bakery-ease);
+
+    &.is-active { background: var(--bakery-dark); color: var(--bakery-card); }
+  }
+}
+
+// Rows with an image, text and a trailing control (cart lines, product rows…)
+.bk-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  margin-bottom: 10px;
+  border: 1px solid var(--bakery-card-border);
+  border-radius: 20px;
+  background: var(--bakery-card);
+
+  &__img {
+    flex: 0 0 auto;
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    object-fit: cover;
+    background: var(--bakery-button);
+  }
+  &__info { flex: 1; min-width: 0; }
+  &__name { margin: 0; font-size: 0.9375rem; font-weight: 700; color: var(--bakery-dark); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  &__meta { margin: 2px 0 0; font-size: 0.875rem; color: var(--bakery-text-secondary); }
+}
+
+.bk-stepper--sm {
+  height: 40px;
+  button { width: 40px; height: 40px; font-size: 18px; }
+  span { min-width: 22px; font-size: 1rem; }
+}
+
+// Order cards (customer + staff)
+.bk-order {
+  margin-bottom: 14px;
+  padding: 18px;
+  border: 1px solid var(--bakery-card-border);
+  border-radius: 22px;
+  background: var(--bakery-card);
+  box-shadow: var(--bakery-card-shadow);
+
+  &__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px 12px;
+    margin-bottom: 12px;
+  }
+  &__no { margin: 0; font-size: 1.0625rem; font-weight: 800; color: var(--bakery-dark); }
+  &__meta { margin: 2px 0 0; font-size: 0.875rem; color: var(--bakery-text-secondary); }
+
+  &__block { padding: 12px 0; border-top: 1px solid var(--bakery-card-border); }
+  &__label { margin: 0 0 4px; font-size: 0.875rem; font-weight: 700; color: var(--bakery-dark); }
+  &__text { margin: 0 0 2px; font-size: 0.9375rem; color: var(--bakery-text); overflow-wrap: anywhere; }
+  &__text a { color: var(--bakery-dark); font-weight: 600; text-underline-offset: 3px; }
+
+  &__item { display: flex; justify-content: space-between; gap: 12px; margin: 0 0 4px; font-size: 0.9375rem; }
+  &__item b { color: var(--bakery-dark); }
+
+  &__total { margin: 0; font-size: 1.15rem; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--bakery-dark); }
+  &__split { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  &__actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; > * { flex: 1 1 140px; } }
+}
+
+// Price breakdown
+.bk-sum {
+  &__row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+    font-size: 0.9375rem;
+    color: var(--bakery-text-secondary);
+    span:last-child { color: var(--bakery-dark); font-weight: 600; font-variant-numeric: tabular-nums; }
+  }
+  &__free { color: var(--bakery-status-finished) !important; font-weight: 800 !important; }
+  &__row--total {
+    margin: 12px 0 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--bakery-card-border);
+    font-size: 1.0625rem;
+    color: var(--bakery-dark);
+    span:last-child { font-weight: 800; }
+  }
+}
+
+// Forms
+.bk-form { display: grid; gap: 14px; }
+.bk-label {
+  display: block;
+  margin: 0 0 6px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--bakery-dark);
+  small { display: block; margin-top: 2px; font-weight: 400; font-size: 0.8125rem; color: var(--bakery-text-secondary); }
+}
+.bk-input--block,
+.bk-select,
+.bk-textarea {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1.5px solid rgba(77, 42, 0, 0.3);
+  border-radius: 14px;
+  background: var(--bakery-input-bg);
+  color: var(--bakery-dark);
+  font-family: $font;
+  font-size: 1rem;
+
+  &:focus { outline: none; border-color: var(--bakery-burnt); box-shadow: var(--bakery-focus-ring); }
+}
+.bk-textarea { min-height: 110px; padding: 12px 14px; resize: vertical; line-height: 1.5; }
+.bk-grid-2 { display: grid; gap: 14px; grid-template-columns: 1fr; @media (min-width: 600px) { grid-template-columns: 1fr 1fr; } }
+
+.bk-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border: 1.5px solid var(--bakery-card-border);
+  border-radius: 18px;
+  background: var(--bakery-input-bg);
+  cursor: pointer;
+
+  input { flex: 0 0 auto; width: 22px; height: 22px; margin: 2px 0 0; accent-color: var(--bakery-dark); }
+  strong { display: block; color: var(--bakery-dark); font-size: 0.9375rem; }
+  span { font-size: 0.875rem; color: var(--bakery-text-secondary); }
+  &:has(input:checked) { border-color: var(--bakery-dark); background: var(--bakery-card); }
+}
+
+// Key/value rows, simple lists, empty state
+.bk-kv {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-top: 1px solid var(--bakery-card-border);
+  font-size: 0.9375rem;
+  &:first-child { border-top: 0; }
+  span:first-child { color: var(--bakery-text-secondary); }
+  span:last-child { color: var(--bakery-dark); font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+}
+
+.bk-empty {
+  text-align: center;
+  padding: 36px 20px;
+  h3 { margin: 0 0 6px; font-family: $display; font-weight: 400; font-size: 1.25rem; color: var(--bakery-dark); }
+  p { margin: 0 auto 18px; max-width: 34ch; color: var(--bakery-text-secondary); }
+}
+
+.bk-spinner {
+  width: 32px; height: 32px; margin: 0 auto 12px;
+  border: 3px solid var(--bakery-card-border);
+  border-top-color: var(--bakery-dark);
+  border-radius: 50%;
+  animation: bk-spin 0.8s linear infinite;
+}
+@keyframes bk-spin { to { transform: rotate(360deg); } }
+
+.bk-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.bk-row--between { justify-content: space-between; }
+.bk-muted { color: var(--bakery-text-secondary); }
+.bk-btn--danger { background: transparent; color: var(--bakery-status-cancelled); box-shadow: inset 0 0 0 1.5px var(--bakery-status-cancelled); }
+.bk-btn--outline { background: transparent; color: var(--bakery-dark); box-shadow: inset 0 0 0 1.5px var(--bakery-dark); }
+.bk-btn--sm { min-height: 40px; padding: 0 16px; font-size: 0.875rem; }
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 13 · Checkout
+// ═════════════════════════════════════════════════════════════════════════════
+
+.bk-wrap--cta { padding-bottom: calc(120px + var(--bakery-safe-bottom)); }
+
+.bk-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 14px;
+
+  &__n {
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--bakery-dark);
+    color: var(--bakery-card);
+    font-size: 0.9375rem;
+    font-weight: 800;
+  }
+  h2 { margin: 0; font-family: $display; font-weight: 400; font-size: 1.2rem; line-height: 1.2; color: var(--bakery-dark); }
+}
+
+.bk-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  margin: 0 0 8px;
+  padding: 14px 16px;
+  border: 1.5px solid var(--bakery-card-border);
+  border-radius: 18px;
+  background: var(--bakery-input-bg);
+  color: var(--bakery-dark);
+  font-family: $font;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--bakery-dur-fast) var(--bakery-ease);
+
+  &__text { flex: 1; min-width: 0; }
+  strong { display: block; font-size: 0.9375rem; }
+  small { display: block; margin-top: 2px; font-size: 0.875rem; color: var(--bakery-text-secondary); }
+
+  &__dot {
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    border: 2px solid rgba(77, 42, 0, 0.35);
+    border-radius: 50%;
+    position: relative;
+  }
+
+  &.is-active {
+    border-color: var(--bakery-dark);
+    background: var(--bakery-card);
+    .bk-option__dot { border-color: var(--bakery-dark); }
+    .bk-option__dot::after { content: ''; position: absolute; inset: 3px; border-radius: 50%; background: var(--bakery-dark); }
+  }
+}
+
+.bk-fieldset { display: grid; gap: 6px; }
+.bk-error { margin: 0; font-size: 0.875rem; font-weight: 600; color: var(--bakery-status-cancelled); }
+.bk-hint { margin: 0; font-size: 0.875rem; color: var(--bakery-text-secondary); }
+.bk-note {
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: var(--bakery-base);
+  strong { display: block; font-size: 0.9375rem; color: var(--bakery-dark); }
+  p { margin: 2px 0 0; font-size: 0.9375rem; color: var(--bakery-text-secondary); }
+}
+.bk-pill-ok {
+  display: inline-flex;
+  padding: 6px 14px;
+  border-radius: var(--bakery-radius-pill);
+  background: var(--bakery-success-bg);
+  color: var(--bakery-success);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.checkout-map { border: 0 !important; border-radius: 18px !important; }
+
+.bk-promo {
+  display: flex;
+  gap: 8px;
+  input { flex: 1; text-transform: uppercase; letter-spacing: 0.04em; }
+}
+.bk-msg-ok { margin: 8px 0 0; font-size: 0.875rem; font-weight: 600; color: var(--bakery-success); }
+.bk-msg-err { margin: 8px 0 0; font-size: 0.875rem; font-weight: 600; color: var(--bakery-status-cancelled); }
+.bk-linkbtn {
+  padding: 0; min-height: 44px; border: 0; background: none;
+  color: var(--bakery-dark); font-family: $font; font-size: 0.875rem; font-weight: 700;
+  text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+}
+
+// Sticky place-order bar
+.bk-cta {
+  position: fixed;
+  z-index: 900;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 12px 16px calc(12px + var(--bakery-safe-bottom));
+  background: var(--bakery-card);
+  border-top: 1px solid var(--bakery-card-border);
+  box-shadow: 0 -10px 30px -18px rgba(45, 24, 0, 0.5);
+
+  &__inner { display: flex; align-items: center; gap: 14px; max-width: 960px; margin: 0 auto; }
+  &__total { display: block; font-size: 0.875rem; color: var(--bakery-text-secondary); line-height: 1.2; strong { display: block; font-size: 1.2rem; color: var(--bakery-dark); } }
+  .bk-btn { flex: 1; min-width: 0; padding: 0 16px; white-space: normal; line-height: 1.2; }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 14 · Account
+// ═════════════════════════════════════════════════════════════════════════════
+
+.bk-avatar {
+  flex: 0 0 auto;
+  width: 60px;
+  height: 60px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--bakery-navbar);
+  color: var(--bakery-dark);
+  font-family: $display;
+  font-size: 1.6rem;
+  text-transform: uppercase;
+}
+.bk-id {
+  &__name { margin: 0; font-family: $display; font-size: 1.35rem; line-height: 1.2; color: var(--bakery-card); }
+  &__mail { margin: 2px 0 6px; font-size: 0.9375rem; color: rgba(249, 230, 168, 0.85); overflow-wrap: anywhere; }
+  &__role { display: inline-block; padding: 3px 12px; border-radius: var(--bakery-radius-pill); background: rgba(249, 230, 168, 0.16); color: var(--bakery-card); font-size: 0.8125rem; font-weight: 700; }
+}
+
+.bk-links {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 6px;
+
+  a {
+    display: block;
+    padding: 14px 16px;
+    border: 1px solid var(--bakery-card-border);
+    border-radius: 18px;
+    background: var(--bakery-card);
+    color: var(--bakery-dark);
+    text-decoration: none;
+    strong { display: block; font-size: 0.9375rem; }
+    span { display: block; margin-top: 2px; font-size: 0.8125rem; line-height: 1.3; color: var(--bakery-text-secondary); }
+    &:active { transform: scale(0.98); }
+  }
+  @media (min-width: 700px) { grid-template-columns: repeat(4, 1fr); }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 15 · Notifications
+// ═════════════════════════════════════════════════════════════════════════════
+
+.bk-notif {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  margin: 0 0 10px;
+  padding: 14px;
+  border: 1px solid var(--bakery-card-border);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--bakery-dark);
+  font-family: $font;
+  text-align: left;
+  cursor: pointer;
+
+  &.is-unread { background: var(--bakery-card); box-shadow: var(--bakery-card-shadow); }
+
+  &__body { flex: 1; min-width: 0; display: block; }
+  strong { display: block; font-size: 0.9375rem; font-weight: 600; }
+  &.is-unread strong { font-weight: 800; }
+  &__body > span { display: block; margin-top: 2px; font-size: 0.9375rem; line-height: 1.45; color: var(--bakery-text-secondary); }
+  small { display: block; margin-top: 6px; font-size: 0.8125rem; color: var(--bakery-text-muted); }
+  &__dot { display: inline-block; width: 9px; height: 9px; margin-left: 8px; border-radius: 50%; background: var(--bakery-burnt); vertical-align: middle; }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 16 · Order tracker
+// ═════════════════════════════════════════════════════════════════════════════
+
+.bk-track {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+
+    // connector to the previous step
+    &:not(:first-child)::before {
+      content: '';
+      position: absolute;
+      top: 11px;
+      right: 50%;
+      width: 100%;
+      height: 3px;
+      background: rgba(77, 42, 0, 0.15);
+    }
+    &.is-done:not(:first-child)::before { background: var(--bakery-dark); }
+  }
+
+  &__dot {
+    position: relative;
+    z-index: 1;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 3px solid rgba(77, 42, 0, 0.2);
+    background: var(--bakery-card);
+  }
+  .is-done &__dot { border-color: var(--bakery-dark); background: var(--bakery-dark); }
+  .is-current &__dot { background: var(--bakery-navbar); box-shadow: 0 0 0 5px rgba(242, 169, 0, 0.3); }
+
+  &__label { font-size: 0.8125rem; line-height: 1.25; font-weight: 600; color: var(--bakery-text-secondary); }
+  .is-done &__label { color: var(--bakery-dark); }
+  .is-current &__label { font-weight: 800; }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 17 · Payment result screens
+// ═════════════════════════════════════════════════════════════════════════════
+
+.bk-result {
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 20px;
+  border: 3px solid currentColor;
+  border-radius: 50%;
+  background: var(--bakery-card);
+  font-size: 3rem;
+
+  &__title { margin: 0 0 8px; font-family: $display; font-weight: 400; font-size: 1.75rem; color: var(--bakery-dark); }
+  &__msg { margin: 0 auto 22px; max-width: 36ch; font-size: 1rem; line-height: 1.55; color: var(--bakery-text-secondary); }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 18 · Promotions (voucher tickets)
+// ═════════════════════════════════════════════════════════════════════════════
+
+.bk-ticket {
+  display: flex;
+  margin-bottom: 14px;
+  border: 1px solid var(--bakery-card-border);
+  border-radius: 22px;
+  background: var(--bakery-card);
+  box-shadow: var(--bakery-card-shadow);
+  overflow: hidden;
+
+  &__stub {
+    flex: 0 0 104px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 12px 8px;
+    background: var(--bakery-navbar);
+    color: var(--bakery-dark);
+    text-align: center;
+    border-right: 2px dashed rgba(77, 42, 0, 0.35);
+
+    strong { font-family: $display; font-weight: 400; font-size: 1.3rem; line-height: 1.1; }
+    span { font-size: 0.8125rem; font-weight: 700; }
+
+    &[data-accent='brown'] { background: var(--bakery-dark); color: var(--bakery-card); }
+    &[data-accent='coral'] { background: var(--bakery-burnt); color: #fff; }
+  }
+
+  &__body {
+    flex: 1;
+    min-width: 0;
+    padding: 14px 16px;
+    h3 { margin: 0 0 2px; font-size: 1.0625rem; font-weight: 800; color: var(--bakery-dark); }
+    p { margin: 0; font-size: 0.9375rem; color: var(--bakery-text-secondary); }
+  }
+  &__meta { margin-top: 6px !important; font-size: 0.8125rem !important; }
+
+  &__code {
+    min-height: 40px;
+    padding: 0 14px;
+    border: 1.5px dashed var(--bakery-dark);
+    border-radius: 12px;
+    background: transparent;
+    color: var(--bakery-dark);
+    font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 19 · Reviews
+// ═════════════════════════════════════════════════════════════════════════════
+
+.bk-feedback-top { display: grid; gap: 0 16px; margin-top: 14px; @media (min-width: 800px) { grid-template-columns: 5fr 7fr; align-items: start; } }
+.bk-bigrate { font-family: $display; font-size: 2.6rem; line-height: 1; color: var(--bakery-dark); }
+.bk-stars { color: #b87a00; letter-spacing: 1px; white-space: nowrap; }
+.bk-bar {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-size: 0.875rem; color: var(--bakery-text-secondary);
+  > span:first-child { width: 36px; flex: 0 0 auto; color: var(--bakery-dark); }
+  > span:last-child { width: 28px; flex: 0 0 auto; text-align: right; }
+  &__track { flex: 1; height: 8px; border-radius: 4px; background: rgba(77, 42, 0, 0.1); overflow: hidden; }
+  &__fill { height: 100%; border-radius: 4px; background: var(--bakery-navbar); }
+}
+.bk-rate {
+  display: flex; gap: 4px;
+  button { width: 48px; height: 48px; border: 0; border-radius: 50%; background: transparent; color: var(--bakery-text-muted); font-size: 1.9rem; line-height: 1; cursor: pointer; &.is-on { color: #b87a00; } }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 20 · Content pages (about, developers)
+// ═════════════════════════════════════════════════════════════════════════════
+
+.bk-cat-grid { display: grid; gap: 14px; @media (min-width: 700px) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.bk-cat {
+  display: flex; flex-direction: column; margin: 0; padding: 0; overflow: hidden;
+  &__img { aspect-ratio: 16 / 9; background: var(--bakery-button); img { width: 100%; height: 100%; object-fit: cover; display: block; } }
+  &__body { padding: 16px 18px 18px; p { margin: 0 0 12px; color: var(--bakery-text-secondary); line-height: 1.5; } h3 { margin-bottom: 6px; } }
+}
+.bk-tag { display: inline-flex; padding: 4px 12px; border-radius: var(--bakery-radius-pill); background: var(--bakery-button); color: var(--bakery-dark); font-size: 0.8125rem; font-weight: 600; }
+.bk-dev__avatar { flex: 0 0 auto; width: 64px; height: 64px; border-radius: 50%; object-fit: cover; background: var(--bakery-button); }
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 21 · Staff: Order oversight (existing oo-* markup, restyled)
+// ═════════════════════════════════════════════════════════════════════════════
+
+.oo-page-header, .oo-metrics-row, .oo-main-row, .oo-error-banner { max-width: 1200px; margin-left: auto; margin-right: auto; }
+.oo-page-header { background: transparent; border: 0; padding: 22px 16px 6px; align-items: center; }
+.oo-page-title { font-family: $display !important; font-weight: 400 !important; font-size: 1.75rem !important; letter-spacing: 0 !important; }
+.oo-page-sub { font-size: 1rem !important; }
+.oo-reload-btn {
+  border: 0; box-shadow: none; border-radius: var(--bakery-radius-pill); min-height: 44px; padding: 0 20px; font-size: 0.9375rem;
+  background: var(--bakery-dark); color: var(--bakery-card);
+  &:hover { background: #3a2000; color: var(--bakery-card); }
+  &:active { transform: scale(0.97); }
+}
+.oo-error-banner { margin: 8px 16px 0; font-size: 0.9375rem; }
+
+.oo-metrics-row { padding: 12px 16px 0; gap: 10px; }
+.oo-metric-card {
+  border: 1px solid var(--bakery-card-border); border-radius: 22px; padding: 16px 18px; box-shadow: none;
+  &:hover { transform: none; }
+  &__label { font-size: 0.875rem; text-transform: none; letter-spacing: 0; font-weight: 600; display: flex; align-items: center; gap: 8px;
+    &::before { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--dot, var(--bakery-burnt)); } }
+  &__value { font-family: $display; font-weight: 400; font-size: 2.1rem; letter-spacing: 0; }
+  &__sub { font-size: 0.875rem; }
+  &__icon { display: none; }
+  &--coral { --dot: var(--bakery-burnt); }
+  &--amber { --dot: var(--bakery-status-pending); }
+  &--brown { --dot: var(--bakery-dark); }
+  &--green { --dot: var(--bakery-status-finished); }
+}
+
+.oo-main-row { padding: 14px 16px 40px; }
+.oo-table-card, .oo-widget-card { border: 1px solid var(--bakery-card-border); border-radius: 22px; }
+.oo-table-card__title, .oo-widget-card__title { font-family: $display !important; font-weight: 400 !important; font-size: 1.15rem !important; }
+
+.oo-tabs {
+  gap: 4px; margin: 4px 16px 12px; padding: 4px; border: 0; border-radius: var(--bakery-radius-pill); background: rgba(77, 42, 0, 0.08);
+}
+.oo-tab {
+  flex: 1; min-height: 40px; margin: 0; padding: 0 14px; border: 0; border-radius: var(--bakery-radius-pill); font-size: 0.875rem;
+  &--active { background: var(--bakery-dark); color: var(--bakery-card); }
+  &--active:hover { color: var(--bakery-card); }
+}
+
+.oo-table {
+  th { background: rgba(77, 42, 0, 0.06); color: var(--bakery-dark) !important; text-transform: none; letter-spacing: 0; font-size: 0.875rem; font-weight: 700; }
+  td { font-size: 0.9375rem; }
+  &__id { color: var(--bakery-dark) !important; font-size: 0.9375rem !important; }
+}
+
+// Phones: each order becomes a small card instead of a sideways-scrolling table
+@media (max-width: 640px) {
+  .oo-table { thead { display: none; }
+    tbody, tr, td { display: block; width: 100%; }
+    .oo-table__row { padding: 12px 16px; border-bottom: 1px solid var(--bakery-card-border); }
+    td { display: flex !important; justify-content: space-between; align-items: center; gap: 12px; padding: 4px 0 !important; border: 0 !important; white-space: normal; background: transparent !important;
+      &::before { content: attr(data-label); font-size: 0.875rem; color: var(--bakery-text-secondary); font-weight: 600; } }
+    .oo-table__empty { display: block !important; &::before { content: none; } }
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 22 · Staff: Admin console
+// ═════════════════════════════════════════════════════════════════════════════
+
+.bk-wrap--wide { max-width: 1100px; }
+.bk-grid-3 { display: grid; gap: 14px; grid-template-columns: 1fr; @media (min-width: 600px) { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.bk-chips--tabs { margin: 8px -16px 12px; }
+
+.bk-disclose {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; font-family: $font;
+  span { font-size: 0.9375rem; font-weight: 700; color: var(--bakery-dark); text-decoration: underline; text-underline-offset: 3px; }
+}
+
+.bk-prodform { display: grid; gap: 18px; margin-top: 16px; @media (min-width: 760px) { grid-template-columns: 200px 1fr; align-items: start; } }
+.bk-prodform__img { display: grid; justify-items: center; gap: 10px; }
+.bk-imgbox {
+  position: relative; display: grid; place-items: center; width: 100%; max-width: 220px; aspect-ratio: 1; border-radius: 20px; background: var(--bakery-button); overflow: hidden; color: var(--bakery-text-secondary); font-size: 0.875rem;
+  img { width: 100%; height: 100%; object-fit: cover; }
+  &--empty { border: 2px dashed rgba(77, 42, 0, 0.3); background: transparent; ion-icon { font-size: 32px; } }
+  &__x { position: absolute; top: 8px; right: 8px; width: 36px; height: 36px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: var(--bakery-card); color: var(--bakery-dark); cursor: pointer; }
+}
+.bk-extra { display: grid; grid-template-columns: 1fr 1fr 44px; gap: 8px; align-items: center; margin-top: 8px; ion-input.bk-field { margin: 0; min-height: 52px; } @media (max-width: 560px) { grid-template-columns: 1fr 44px; ion-input:nth-child(2) { grid-column: 1; } } }
+
+.bk-prod { display: grid; grid-template-columns: 72px 1fr; gap: 14px; align-items: start; @media (min-width: 700px) { grid-template-columns: 88px 1fr auto; } }
+.bk-prod__img { width: 72px; height: 72px; border-radius: 18px; object-fit: cover; background: var(--bakery-button); @media (min-width: 700px) { width: 88px; height: 88px; } }
+.bk-prod__name { font-size: 1.0625rem; color: var(--bakery-dark); }
+.bk-prod__price { display: block; margin-bottom: 8px; font-size: 1.15rem; font-variant-numeric: tabular-nums; color: var(--bakery-dark); }
+.bk-prod__side { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 12px; border-top: 1px solid var(--bakery-card-border);
+  .bk-prod__price { margin: 0; }
+  @media (min-width: 700px) { grid-column: auto; display: block; text-align: right; padding: 0; border: 0; .bk-prod__price { margin-bottom: 8px; } } }
+
+.bk-stock { display: inline-flex; padding: 3px 12px; border-radius: var(--bakery-radius-pill); font-size: 0.8125rem; font-weight: 700; }
+
+.bk-stepper__input { width: 56px; height: 40px; border: 0; background: transparent; text-align: center; font-family: $font; font-size: 1rem; font-weight: 800; color: var(--bakery-dark); -moz-appearance: textfield; &::-webkit-outer-spin-button, &::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; } }
+
+.bk-bars { display: flex; align-items: flex-end; gap: 8px; min-height: 190px;
+  &__col { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; }
+  &__bar { width: 100%; max-width: 44px; border-radius: 10px 10px 4px 4px; background: var(--bakery-navbar); }
+  &__val { font-size: 0.8125rem; font-weight: 700; color: var(--bakery-dark); font-variant-numeric: tabular-nums; }
+  &__lbl { font-size: 0.8125rem; color: var(--bakery-text-secondary); } }
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 24 · Keep the floating chrome out of the side menu's way
+// The menu lives inside ion-split-pane (its own stacking context), so a fixed
+// nav at the root paints over it and hid the "Log out" button. While the menu
+// is open (Ionic adds .show-menu to it), tuck the nav / cart bar / sticky CTA away.
+// ═════════════════════════════════════════════════════════════════════════════
+
+body:has(ion-menu.show-menu) {
+  .bk-nav,
+  .bk-cartbar,
+  .bk-cta { display: none; }
+}
+
+// Same problem for the product detail sheet: it sits inside the page's own
+// stacking context, so the root-level nav painted over its "Add to cart" footer.
+// While a sheet is open the sheet owns the bottom of the screen.
+body:has(.bk-sheet, .cs) {
+  .bk-nav,
+  .bk-cartbar,
+  .bk-cta { display: none; }
+}
+
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 25 · Fit-to-device safety
+// CSS grid / flex children default to min-width:auto, so a form control with an
+// intrinsic width (a number input is ~170px) can push its whole container wider
+// than a phone screen. Let every layout container's children shrink.
+// ═════════════════════════════════════════════════════════════════════════════
+
+.bk-wrap,
+.bk-panel > *,
+.bk-form > *,
+.bk-grid-2 > *,
+.bk-grid-3 > *,
+.bk-grid > *,
+.bk-stats > *,
+.bk-links > *,
+.bk-cat-grid > *,
+.bk-prodform > *,
+.bk-feedback-top > *,
+.bk-sum,
+.bk-line__info,
+.bk-order__head > div,
+.bk-extra > * { min-width: 0; }
+
+.bk-wrap { overflow-x: clip; }
+
+.bk-wrap input,
+.bk-wrap select,
+.bk-wrap textarea { max-width: 100%; }
+
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 26 · Polish
+// ═════════════════════════════════════════════════════════════════════════════
+
+// Narrow phones: keep a four-digit price and the + button on one row.
+@media (max-width: 399px) {
+  .bk-pcard__body { padding: 10px 10px 12px 12px; }
+  .bk-pcard__price { font-size: 0.9375rem; }
+  .bk-pcard__add { width: 40px; height: 40px; font-size: 20px; }
+  .bk-pcard__foot { gap: 4px; }
+  .bk-line__img { width: 56px; height: 56px; }
+}
+
+// Tappable things shouldn't flash the browser's grey highlight on Android.
+.bk-btn, .bk-chip, .bk-pcard__hit, .bk-pcard__add, .bk-nav__tab, .bk-cartbar,
+.bk-option, .bk-iconbtn, .bk-tile, .bk-notif, .bk-seg button { -webkit-tap-highlight-color: transparent; }
+
+// Cards ease in, a few at a time, so lists feel alive without being slow.
+.bk-grid > app-product-card > .bk-pcard,
+.bk-rail > app-product-card > .bk-pcard,
+.bk-order,
+.bk-ticket,
+.bk-notif { animation: bk-rise 0.35s var(--bakery-ease) both; }
+.bk-grid > app-product-card:nth-child(2) > .bk-pcard, .bk-rail > app-product-card:nth-child(2) > .bk-pcard { animation-delay: 0.04s; }
+.bk-grid > app-product-card:nth-child(3) > .bk-pcard, .bk-rail > app-product-card:nth-child(3) > .bk-pcard { animation-delay: 0.08s; }
+.bk-grid > app-product-card:nth-child(4) > .bk-pcard, .bk-rail > app-product-card:nth-child(4) > .bk-pcard { animation-delay: 0.12s; }
+.bk-grid > app-product-card:nth-child(n+5) > .bk-pcard, .bk-rail > app-product-card:nth-child(n+5) > .bk-pcard { animation-delay: 0.16s; }
+
+// Home toolbar bell
+.bk-bell { position: relative; }
+.bk-bell__dot {
+  position: absolute; top: 8px; right: 8px; min-width: 16px; height: 16px; padding: 0 4px;
+  display: grid; place-items: center; border-radius: 8px;
+  background: var(--bakery-status-cancelled); color: #fff; font-size: 0.6875rem; font-weight: 800; line-height: 1;
+  box-shadow: 0 0 0 2px var(--bakery-navbar);
+}
+
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 27 · Visual polish
+// Small, consistent touches: depth, motion and breathing room. No new colours.
+// ═════════════════════════════════════════════════════════════════════════════
+
+// Header bar: a soft edge so content scrolls "under" it.
+ion-header ion-toolbar {
+  --box-shadow: 0 6px 16px -10px rgba(77, 42, 0, 0.55);
+}
+
+// Floating nav: frosted dark glass, clearer active tab.
+.bk-nav {
+  background: rgba(60, 33, 0, 0.94);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 16px 32px -14px rgba(45, 24, 0, 0.75), inset 0 1px 0 rgba(255, 244, 214, 0.08);
+
+  &__tab {
+    font-size: 0.75rem;
+    letter-spacing: 0.01em;
+
+    &:active { transform: scale(0.96); }
+    &.is-active { box-shadow: 0 6px 14px -8px rgba(242, 169, 0, 0.9); }
+  }
+}
+
+// Cart bar: richer gold, count badge that pops.
+.bk-cartbar {
+  background: linear-gradient(180deg, #f7b82a 0%, var(--bakery-navbar) 100%);
+  box-shadow: 0 14px 28px -12px rgba(77, 42, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+
+  &__count { box-shadow: 0 4px 10px -4px rgba(45, 24, 0, 0.7); }
+  &:active { transform: scale(0.985); }
+}
+
+// Product cards: lift on hover (desktop), gentle image zoom, tidy tap feedback.
+.bk-pcard {
+  &__media { overflow: hidden; }
+  &__media img { transition: transform 0.45s var(--bakery-ease); }
+  &__add { box-shadow: 0 6px 12px -6px rgba(45, 24, 0, 0.7); transition: transform var(--bakery-dur-fast) var(--bakery-ease); }
+  &__add:active { transform: scale(0.9); }
+
+  @media (hover: hover) {
+    transition: transform 0.25s var(--bakery-ease), box-shadow 0.25s var(--bakery-ease);
+    &:hover { transform: translateY(-3px); box-shadow: 0 2px 4px rgba(77, 42, 0, 0.08), 0 18px 28px -14px rgba(77, 42, 0, 0.4); }
+    &:hover &__media img { transform: scale(1.05); }
+  }
+}
+
+// Headings: a little more presence.
+.bk-sec-head h2 { font-size: 1.4rem; letter-spacing: -0.005em; }
+.bk-home-head h1 { letter-spacing: -0.01em; }
+
+// Search pill: soft depth so it reads as tappable.
+.bk-searchpill {
+  box-shadow: 0 1px 2px rgba(77, 42, 0, 0.06), 0 10px 20px -14px rgba(77, 42, 0, 0.45);
+  transition: transform var(--bakery-dur-fast) var(--bakery-ease), box-shadow var(--bakery-dur-fast) var(--bakery-ease);
+  &:active { transform: scale(0.99); }
+}
+
+// Buttons: consistent depth and a visible keyboard focus ring.
+.bk-btn {
+  &--dark { box-shadow: 0 8px 16px -10px rgba(45, 24, 0, 0.8); }
+  &--gold { box-shadow: 0 8px 16px -10px rgba(204, 111, 0, 0.8); }
+  &:focus-visible { outline: 3px solid var(--bakery-burnt); outline-offset: 2px; }
+}
+
+// Skeletons: a soft shimmer instead of a flat pulse.
+.bk-skel {
+  background: linear-gradient(100deg, rgba(229, 211, 175, 0.55) 30%, rgba(255, 244, 214, 0.9) 50%, rgba(229, 211, 175, 0.55) 70%);
+  background-size: 200% 100%;
+  animation: bk-shimmer 1.3s linear infinite;
+}
+@keyframes bk-shimmer {
+  from { background-position: 120% 0; }
+  to   { background-position: -120% 0; }
+}
+
+// Respect people who turn animations off.
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

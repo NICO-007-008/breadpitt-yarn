@@ -1,0 +1,249 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-menu-button slot="start" aria-label="Open menu"></ion-menu-button>
+    <ion-title>Orders overview</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="page-content" [scrollY]="true">
+
+  <!-- ── Page heading ──────────────────────────────────────────────────── -->
+  <div class="oo-page-header">
+    <div>
+      <h1 class="oo-page-title">Order oversight</h1>
+      <p class="oo-page-sub">Every store order in one place.</p>
+    </div>
+    <button class="oo-reload-btn" (click)="load()" aria-label="Refresh orders">
+      Refresh
+    </button>
+  </div>
+
+  <!-- ── Error banner ──────────────────────────────────────────────────── -->
+  @if (error(); as err) {
+    <div class="oo-error-banner">{{ err }}</div>
+  }
+
+  <!-- ── Loading spinner ───────────────────────────────────────────────── -->
+  @if (loading()) {
+    <div class="oo-loading">
+      <div class="spinner"></div>
+      <p>Loading orders…</p>
+    </div>
+  } @else {
+
+  <!-- ════════════════════════════════════════════════════════════════════
+       ROW 1 — Four metric cards
+  ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="oo-metrics-row">
+
+    <!-- Total Orders -->
+    <div class="oo-metric-card oo-metric-card--coral">
+      <p class="oo-metric-card__label">Total Orders</p>
+      <p class="oo-metric-card__value">{{ totalOrders() }}</p>
+      <p class="oo-metric-card__sub">{{ finishedOrders() }} completed</p>
+      <span class="oo-metric-card__icon">Orders</span>
+    </div>
+
+    <!-- Pending Orders -->
+    <div class="oo-metric-card oo-metric-card--amber">
+      <p class="oo-metric-card__label">Pending Orders</p>
+      <p class="oo-metric-card__value">{{ pendingOrders() }}</p>
+      <p class="oo-metric-card__sub">Awaiting confirmation</p>
+      <span class="oo-metric-card__icon">Pending</span>
+    </div>
+
+    <!-- Processing Orders -->
+    <div class="oo-metric-card oo-metric-card--brown">
+      <p class="oo-metric-card__label">Processing Orders</p>
+      <p class="oo-metric-card__value">{{ processingOrders() }}</p>
+      <p class="oo-metric-card__sub">Preparing / in transit</p>
+      <span class="oo-metric-card__icon">Active</span>
+    </div>
+
+    <!-- Finished Orders -->
+    <div class="oo-metric-card oo-metric-card--green">
+      <p class="oo-metric-card__label">Finished Orders</p>
+      <p class="oo-metric-card__value">{{ finishedOrders() }}</p>
+      <p class="oo-metric-card__sub">{{ formatPrice(totalRevenue()) }} revenue</p>
+      <span class="oo-metric-card__icon">Done</span>
+    </div>
+
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════
+       ROW 2 — Order table (left) + Right-side widgets
+  ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="oo-main-row">
+
+    <!-- ── Left: Order List ────────────────────────────────────────────── -->
+    <div class="oo-table-card">
+
+      <div class="oo-table-card__head">
+        <h2 class="oo-table-card__title">Order List</h2>
+        <span class="oo-table-card__count">{{ filteredOrders().length }} order{{ filteredOrders().length === 1 ? '' : 's' }}</span>
+      </div>
+
+      <!-- Tab bar -->
+      <div class="oo-tabs">
+        <button
+          class="oo-tab"
+          [class.oo-tab--active]="activeTab() === 'all'"
+          (click)="activeTab.set('all')"
+        >All</button>
+        <button
+          class="oo-tab"
+          [class.oo-tab--active]="activeTab() === 'pending'"
+          (click)="activeTab.set('pending')"
+        >Pending</button>
+        <button
+          class="oo-tab"
+          [class.oo-tab--active]="activeTab() === 'delivering'"
+          (click)="activeTab.set('delivering')"
+        >Delivering</button>
+        <button
+          class="oo-tab"
+          [class.oo-tab--active]="activeTab() === 'finished'"
+          (click)="activeTab.set('finished')"
+        >Finished</button>
+      </div>
+
+      <!-- Table -->
+      <div class="oo-table-wrap">
+        <table class="oo-table">
+          <thead>
+            <tr>
+              <th>Order</th>
+              <th>Customer</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (filteredOrders().length === 0) {
+              <tr>
+                <td colspan="5" class="oo-table__empty">
+                  No orders in this category yet.
+                </td>
+              </tr>
+            }
+            @for (order of filteredOrders(); track order.id) {
+              <tr class="oo-table__row">
+                <td class="oo-table__id" data-label="Order">{{ shortId(order.id) }}</td>
+                <td class="oo-table__customer" data-label="Customer">{{ order.customer_name }}</td>
+                <td class="oo-table__date" data-label="Date">{{ formatDate(order.created_at) }}</td>
+                <td data-label="Status">
+                  <span class="status-badge status-badge--{{ statusBadge(order.status) }}">
+                    {{ statusLabel(order.status) }}
+                  </span>
+                  <span class="oo-pay" [class.oo-pay--bad]="order.payment_status === 'failed'" [class.oo-pay--ok]="order.payment_status === 'paid'">{{ paymentStatusText(order) }}</span>
+                </td>
+                <td class="oo-table__amount" data-label="Total">{{ formatPrice(order.total) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- ── Right: widgets column ───────────────────────────────────────── -->
+    <div class="oo-widgets-col">
+
+      <!-- ── Donut chart — Order Statistics ─────────────────────────── -->
+      <div class="oo-widget-card">
+        <h3 class="oo-widget-card__title">Order Statistics</h3>
+        <p class="oo-widget-card__sub">Orders by status</p>
+
+        @if (donutSlices().length === 0) {
+          <div class="oo-widget-empty">No order data yet.</div>
+        } @else {
+          <!-- SVG Donut -->
+          <div class="oo-donut-wrap">
+            <svg viewBox="0 0 128 128" class="oo-donut-svg" aria-hidden="true">
+              <!-- track ring -->
+              <circle cx="64" cy="64" r="54"
+                fill="none"
+                stroke="var(--bakery-card-border)"
+                stroke-width="18"/>
+              <!-- coloured slices -->
+              @for (slice of donutSlices(); track slice.label) {
+                <circle cx="64" cy="64" r="54"
+                  fill="none"
+                  [attr.stroke]="slice.color"
+                  stroke-width="18"
+                  [attr.stroke-dasharray]="slice.dasharray"
+                  [attr.stroke-dashoffset]="slice.dashoffset"
+                  stroke-linecap="butt"
+                  transform="rotate(-90 64 64)"/>
+              }
+              <!-- centre label -->
+              <text x="64" y="60" text-anchor="middle"
+                font-family="Inter,sans-serif" font-size="13" font-weight="800"
+                fill="var(--bakery-dark)">
+                {{ totalOrders() }}
+              </text>
+              <text x="64" y="75" text-anchor="middle"
+                font-family="Inter,sans-serif" font-size="8" font-weight="500"
+                fill="var(--bakery-text-secondary)">
+                orders
+              </text>
+            </svg>
+          </div>
+
+          <!-- Legend -->
+          <div class="oo-donut-legend">
+            @for (slice of donutSlices(); track slice.label) {
+              <div class="oo-donut-legend__row">
+                <span class="oo-donut-legend__dot" [style.background]="slice.color"></span>
+                <span class="oo-donut-legend__label">{{ slice.label }}</span>
+                <span class="oo-donut-legend__bar-wrap">
+                  <span class="oo-donut-legend__bar"
+                    [style.width.%]="slice.percent * 100"
+                    [style.background]="slice.color"></span>
+                </span>
+                <span class="oo-donut-legend__count">{{ slice.count }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- ── Low-stock / Alerts widget ──────────────────────────────── -->
+      <div class="oo-widget-card">
+        <h3 class="oo-widget-card__title">Inventory Alerts</h3>
+        <p class="oo-widget-card__sub">Products that may need restocking</p>
+
+        @if (lowStockItems().length === 0) {
+          <div class="oo-widget-empty">No products in the catalog yet.</div>
+        } @else {
+          <div class="oo-alerts-list">
+            @for (product of lowStockItems(); track product.id) {
+              <div class="oo-alert-row">
+                <!-- thumbnail -->
+                <div class="oo-alert-row__img">
+                  @if (product.image_url) {
+                    <img [src]="product.image_url" [alt]="product.name" (error)="$any($event.target).style.display='none'">
+                  } @else {
+                    <img src="logo.jpg" alt="" />
+                  }
+                </div>
+                <!-- info -->
+                <div class="oo-alert-row__info">
+                  <p class="oo-alert-row__name">{{ product.name }}</p>
+                  <p class="oo-alert-row__cat">{{ product.category }}</p>
+                </div>
+                <!-- badge -->
+                <span class="oo-alert-badge">Low stock</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+    </div><!-- /widgets col -->
+  </div><!-- /main row -->
+
+  } <!-- /else not loading -->
+
+</ion-content>

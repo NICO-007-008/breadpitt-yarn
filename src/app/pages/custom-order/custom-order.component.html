@@ -1,0 +1,76 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-menu-button slot="start" aria-label="Open menu"></ion-menu-button>
+    <ion-title>Custom order</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="page-content" [scrollY]="true">
+  <div class="bk-wrap" style="max-width: 640px">
+
+    <header class="bk-page-head">
+      <h1>Made just for you</h1>
+      <p>Wedding cakes, party trays, themed designs or bulk orders. Tell us what you need and we'll reply in your notification inbox.</p>
+    </header>
+
+    @if (submitted()) {
+      <section class="bk-card bk-empty" style="margin-top: 16px">
+        <h3>Request sent</h3>
+        <p>Our bakers have your request. We'll notify you once it's been reviewed.</p>
+        <div class="bk-row" style="justify-content: center">
+          <a class="bk-btn bk-btn--dark" routerLink="/bread-catalog">Browse the menu</a>
+          <a class="bk-btn bk-btn--outline" routerLink="/notifications">Check notifications</a>
+        </div>
+      </section>
+    } @else {
+      <section class="bk-card" style="margin-top: 16px">
+        @if (errorMessage(); as err) { <p class="bk-alert" role="alert">{{ err }}</p> }
+
+        <div class="bk-form">
+          <div class="bk-fieldset">
+            <label class="bk-label" for="co-name">Your name</label>
+            <input id="co-name" class="bk-input--block" type="text" autocomplete="name" placeholder="Maria Santos"
+                   [value]="name()" (input)="name.set($any($event.target).value)" />
+            @if (errors().name) { <p class="bk-error">{{ errors().name }}</p> }
+          </div>
+
+          <div class="bk-fieldset">
+            <label class="bk-label" for="co-phone">Phone number</label>
+            <input id="co-phone" class="bk-input--block" type="tel" inputmode="tel" autocomplete="tel" placeholder="09171234567"
+                   [value]="phone()" (input)="phone.set($any($event.target).value)" />
+            @if (errors().phone) { <p class="bk-error">{{ errors().phone }}</p> }
+          </div>
+
+          <div class="bk-fieldset">
+            <label class="bk-label" for="co-desc">What would you like us to make?</label>
+            <textarea id="co-desc" class="bk-textarea" rows="4" placeholder="A 3-tier chocolate cake for 60 guests, vanilla buttercream, berry toppings"
+                      [value]="description()" (input)="description.set($any($event.target).value)"></textarea>
+            @if (errors().description) { <p class="bk-error">{{ errors().description }}</p> }
+          </div>
+
+          <div class="bk-grid-2">
+            <div class="bk-fieldset">
+              <label class="bk-label" for="co-qty">Quantity</label>
+              <input id="co-qty" class="bk-input--block" type="number" inputmode="numeric" min="1" step="1" placeholder="1"
+                     [value]="quantity()" (input)="quantity.set($any($event.target).value)" />
+              @if (errors().quantity) { <p class="bk-error">{{ errors().quantity }}</p> }
+            </div>
+            <div class="bk-fieldset">
+              <label class="bk-label" for="co-date">Needed by <small>Optional</small></label>
+              <input id="co-date" class="bk-input--block" type="date" [value]="deadline()" (change)="deadline.set($any($event.target).value)" />
+            </div>
+          </div>
+
+          @if (!user()) {
+            <p class="bk-note"><strong>Tip</strong> Sign in first so we can match this request to your account and notify you.</p>
+          }
+
+          <button type="button" class="bk-btn bk-btn--dark bk-btn--block" [disabled]="submitting()" (click)="submit()">
+            {{ submitting() ? 'Sending request…' : 'Send request' }}
+          </button>
+        </div>
+      </section>
+    }
+
+  </div>
+</ion-content>

@@ -1,0 +1,233 @@
+// ═════════════════════════════════════════════════════════════════════════════
+// _menu.scss — side menu ("More"). Global so it can style Ionic's menu panel.
+// Markup lives in app/components/menu/menu.component.html (classes: bk-menu__*).
+// ═════════════════════════════════════════════════════════════════════════════
+
+ion-menu.app-menu {
+  --width: 308px;
+  --max-width: 86vw;
+  --background: var(--bakery-card);
+  --box-shadow: 0 0 40px rgba(45, 24, 0, 0.35);
+
+  // rounded outer edge
+  &::part(container) {
+    border-radius: 0 28px 28px 0;
+    overflow: hidden;
+  }
+}
+
+// ion-menu-toggle is a custom element: make it a normal block so links fill the row.
+ion-menu-toggle { display: block; }
+
+.bk-menu {
+  // ── Header ────────────────────────────────────────────────────────────────
+  &__head {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: calc(16px + var(--ion-safe-area-top, 0px)) 16px 14px 20px;
+  }
+
+  &__logo {
+    flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    object-fit: cover;
+    background: var(--bakery-button);
+  }
+
+  &__brand { flex: 1; min-width: 0; }
+
+  &__name {
+    margin: 0;
+    font-family: var(--bakery-font-display);
+    font-size: 1.2rem;
+    line-height: 1.15;
+    color: var(--bakery-dark);
+  }
+
+  &__tag {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--bakery-text-secondary);
+  }
+
+  &__close {
+    flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--bakery-dark);
+    font-size: 24px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+
+    &:active { background: rgba(77, 42, 0, 0.1); }
+  }
+
+  // ── Scrolling area ────────────────────────────────────────────────────────
+  &__scroll {
+    --background: transparent;
+    --padding-start: 12px;
+    --padding-end: 12px;
+    --padding-bottom: 12px;
+    flex: 1 1 auto;
+  }
+
+  // ── Account card ──────────────────────────────────────────────────────────
+  &__me {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 4px 0 6px;
+    padding: 12px 14px;
+    border-radius: 20px;
+    background: var(--bakery-dark);
+    color: var(--bakery-card);
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+
+    &:active { background: #3a2000; }
+
+    > ion-icon { flex: 0 0 auto; font-size: 18px; opacity: 0.7; }
+  }
+
+  &__avatar {
+    flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--bakery-navbar);
+    color: var(--bakery-dark);
+    font-family: var(--bakery-font-display);
+    font-size: 1.3rem;
+  }
+
+  &__who {
+    flex: 1;
+    min-width: 0;
+
+    strong {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 1rem;
+    }
+    small {
+      display: block;
+      font-size: 0.8125rem;
+      color: rgba(249, 230, 168, 0.85);
+    }
+  }
+
+  // ── Groups + links ────────────────────────────────────────────────────────
+  &__group { padding-top: 8px; }
+
+  &__label {
+    margin: 10px 8px 4px;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--bakery-text-secondary);
+  }
+
+  &__link {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 48px;
+    margin-bottom: 2px;
+    padding: 0 14px;
+    border-radius: 16px;
+    color: var(--bakery-dark);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color 150ms ease-out, color 150ms ease-out;
+
+    ion-icon { flex: 0 0 auto; font-size: 22px; color: var(--bakery-text-secondary); }
+
+    @media (hover: hover) {
+      &:hover:not(.is-active) { background: rgba(77, 42, 0, 0.07); }
+    }
+    &:active:not(.is-active) { background: rgba(77, 42, 0, 0.12); }
+
+    &:focus-visible { outline: var(--bakery-focus-outline); outline-offset: -2px; }
+
+    // The current page — driven by a signal, so it always follows navigation.
+    &.is-active {
+      background: var(--bakery-dark);
+      color: var(--bakery-card);
+      ion-icon { color: var(--bakery-navbar); }
+    }
+  }
+
+  &__text { flex: 1; min-width: 0; }
+
+  &__badge {
+    flex: 0 0 auto;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 7px;
+    display: grid;
+    place-items: center;
+    border-radius: 11px;
+    background: var(--bakery-status-cancelled);
+    color: #fff;
+    font-size: 0.8125rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  // ── Pinned footer ─────────────────────────────────────────────────────────
+  &__foot {
+    flex: 0 0 auto;
+    padding: 10px 16px calc(14px + var(--bakery-safe-bottom));
+    border-top: 1px solid var(--bakery-card-border);
+    background: var(--bakery-card);
+  }
+
+  &__logout,
+  &__signin {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 50px;
+    border: 0;
+    border-radius: var(--bakery-radius-pill);
+    font-family: var(--bakery-font);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+
+    ion-icon { font-size: 20px; }
+    &[disabled] { opacity: 0.55; pointer-events: none; }
+  }
+
+  &__logout {
+    background: transparent;
+    color: var(--bakery-status-cancelled);
+    box-shadow: inset 0 0 0 1.5px var(--bakery-status-cancelled);
+    &:active { background: var(--bakery-error-bg); }
+  }
+
+  &__signin {
+    background: var(--bakery-dark);
+    color: var(--bakery-card);
+    &:active { background: #3a2000; }
+  }
+}

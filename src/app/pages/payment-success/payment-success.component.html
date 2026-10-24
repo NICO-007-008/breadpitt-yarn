@@ -1,0 +1,44 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Payment status</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="page-content" [scrollY]="true">
+  <div class="bk-wrap" style="max-width: 480px; text-align: center; padding-top: 40px">
+
+    @if (loading()) {
+      <div class="bk-empty"><div class="bk-spinner"></div><p>Checking your payment…</p></div>
+    } @else {
+
+      <div class="bk-result" [style.border-color]="getStatusColor()" [style.color]="getStatusColor()">
+        <ion-icon [icon]="getStatusIcon()" aria-hidden="true"></ion-icon>
+      </div>
+
+      <h1 class="bk-result__title">
+        @if (paymentStatus() === 'paid') { Payment successful }
+        @else if (paymentStatus() === 'pending') { Payment pending }
+        @else if (paymentStatus() === 'failed') { Payment failed }
+        @else { Processing }
+      </h1>
+      <p class="bk-result__msg">{{ getStatusMessage() }}</p>
+
+      @if (orderId(); as id) {
+        <section class="bk-card" style="text-align: left">
+          <div class="bk-kv"><span>Order ID</span><span>{{ id.replace(/-/g, '').slice(0, 10).toUpperCase() }}</span></div>
+          <div class="bk-kv"><span>Payment method</span><span>{{ getMethodLabel(paymentMethod()) }}</span></div>
+        </section>
+      }
+
+      <div class="bk-form" style="margin-top: 20px">
+        <a class="bk-btn bk-btn--dark bk-btn--block" routerLink="/orders">View my orders</a>
+        <a class="bk-btn bk-btn--outline bk-btn--block" routerLink="/bread-catalog">Continue shopping</a>
+      </div>
+    }
+
+    @if (error()) {
+      <p class="bk-alert" role="alert" style="margin-top: 20px">{{ error() }}</p>
+    }
+
+  </div>
+</ion-content>

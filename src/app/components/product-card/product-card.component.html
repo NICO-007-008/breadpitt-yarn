@@ -1,0 +1,49 @@
+<article class="bk-pcard" [attr.data-cat]="product().category" [class.bk-pcard--rail]="rail()" [class.bk-pcard--sold-out]="soldOut()">
+  <div class="bk-pcard__media">
+    @if (product().image_url) {
+      <img [src]="product().image_url" alt="" loading="lazy" (error)="onImageError($event)" />
+    } @else {
+      <img class="bk-pcard__fallback" [src]="artSrc()" alt="" />
+    }
+    @if (soldOut()) {
+      <span class="bk-pcard__flag bk-pcard__flag--out">Sold out</span>
+    } @else if (lowStock()) {
+      <span class="bk-pcard__flag">Only {{ product().stock_quantity }} left</span>
+    }
+  </div>
+
+  <div class="bk-pcard__body">
+    <h3 class="bk-pcard__name">{{ product().name }}</h3>
+
+    <div class="bk-pcard__meta">
+      @if (rating() > 0) {
+        <span class="bk-pcard__rating">
+          <ion-icon [icon]="starIcon" aria-hidden="true"></ion-icon>{{ rating().toFixed(1) }}
+        </span>
+      }
+      <span>{{ product().category }}</span>
+    </div>
+
+    <div class="bk-pcard__foot">
+      <span class="bk-pcard__price">{{ price() }}</span>
+      <button
+        type="button"
+        class="bk-pcard__add"
+        [class.is-added]="added()"
+        [disabled]="soldOut()"
+        (click)="add($event)"
+        [attr.aria-label]="'Add ' + product().name + ' to cart'"
+      >
+        <ion-icon [icon]="added() ? doneIcon : addIcon" aria-hidden="true"></ion-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Stretched tap target: opens the detail sheet. Sits under the add button. -->
+  <button
+    type="button"
+    class="bk-pcard__hit"
+    (click)="view.emit(product())"
+    [attr.aria-label]="'View details for ' + product().name"
+  ></button>
+</article>

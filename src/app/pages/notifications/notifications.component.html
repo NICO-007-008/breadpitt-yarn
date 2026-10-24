@@ -1,0 +1,57 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-menu-button slot="start" aria-label="Open menu"></ion-menu-button>
+    <ion-title>Notifications</ion-title>
+    @if (unreadCount() > 0) {
+      <ion-buttons slot="end">
+        <ion-button (click)="markAllRead()" aria-label="Mark all as read">Mark all read</ion-button>
+      </ion-buttons>
+    }
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="page-content" [scrollY]="true">
+  <div class="bk-wrap">
+
+    <header class="bk-page-head">
+      <h1>Inbox</h1>
+      <p>Order updates, promotions and news from the bakery.</p>
+    </header>
+
+    @if (actionsError) {
+      <div class="bk-alert bk-row bk-row--between" role="alert" style="margin-top: 12px">
+        <span>Could not update notifications. {{ actionsError }}</span>
+        <button type="button" class="bk-linkbtn" (click)="actionsError = null">Dismiss</button>
+      </div>
+    }
+
+    @if (errorMessage) {
+      <div class="bk-empty">
+        <h3>We couldn't load your inbox</h3>
+        <p>{{ errorMessage }}</p>
+        <button type="button" class="bk-btn bk-btn--dark" (click)="refresh()">Try again</button>
+      </div>
+    } @else if (!loaded()) {
+      <div class="bk-empty"><div class="bk-spinner"></div><p>Loading inbox…</p></div>
+    } @else if (items().length === 0) {
+      <div class="bk-empty">
+        <h3>All caught up</h3>
+        <p>Order updates, promotions and news will show up here.</p>
+      </div>
+    } @else {
+      <div style="margin-top: 14px">
+        @for (item of items(); track item.id) {
+          <button type="button" class="bk-notif" [class.is-unread]="!item.read" (click)="open(item)">
+            <span class="notif-icon-circle"><ion-icon [icon]="iconFor(item.type)" aria-hidden="true"></ion-icon></span>
+            <span class="bk-notif__body">
+              <strong>{{ item.title }}@if (!item.read) { <i class="bk-notif__dot" aria-label="Unread"></i> }</strong>
+              <span>{{ item.body }}</span>
+              <small>{{ formatDate(item.created_at) }}</small>
+            </span>
+          </button>
+        }
+      </div>
+    }
+
+  </div>
+</ion-content>

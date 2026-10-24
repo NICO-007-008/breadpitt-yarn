@@ -1,0 +1,122 @@
+<ion-header class="no-print">
+  <ion-toolbar>
+    <ion-menu-button slot="start" aria-label="Open menu"></ion-menu-button>
+    <ion-title>Your order</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="page-content" [scrollY]="true">
+  <div class="bk-wrap">
+
+    @if (loading()) {
+      <div class="bk-empty"><div class="bk-spinner"></div><p>Fetching your order…</p></div>
+    }
+
+    @if (!loading() && error()) {
+      <div class="bk-empty">
+        <h3>We couldn't load this order</h3>
+        <p>{{ error() }}</p>
+        <a class="bk-btn bk-btn--dark" routerLink="/orders">Back to my orders</a>
+      </div>
+    }
+
+    @if (!loading() && order(); as o) {
+
+      <header class="bk-page-head no-print">
+        <h1>{{ o.status === 'cancelled' ? 'Order cancelled' : 'Order confirmed' }}</h1>
+        <p>{{ o.status === 'cancelled' ? 'This order was cancelled.' : 'Thank you. The bakers are on it, and this page updates as your order moves along.' }}</p>
+      </header>
+
+      <!-- Live tracker -->
+      @if (steps().length) {
+        <section class="bk-card no-print" style="margin-top: 14px">
+          <ol class="bk-track" aria-label="Order progress">
+            @for (step of steps(); track step.label) {
+              <li [class.is-done]="step.done" [class.is-current]="step.current" [attr.aria-current]="step.current ? 'step' : null">
+                <span class="bk-track__dot"></span>
+                <span class="bk-track__label">{{ step.label }}</span>
+              </li>
+            }
+          </ol>
+        </section>
+      }
+
+      <div class="receipt-print" style="margin-top: 14px">
+
+        <section class="bk-card bk-card--dark">
+          <div class="bk-row bk-row--between" style="align-items: flex-start">
+            <div>
+              <h2 style="margin: 0">Knead to Know</h2>
+              <p class="bk-id__mail" style="margin: 4px 0 0">Artisan breads, baked daily<br />123 Banawe St, Quezon City<br />0917 123 4567, kneadtoknow&#64;example.com</p>
+            </div>
+            <div style="text-align: right">
+              <p class="bk-id__mail" style="margin: 0">Order no.</p>
+              <p style="margin: 0; font-size: 1.15rem; font-weight: 800">#{{ orderNumber() }}</p>
+              <p class="bk-id__mail" style="margin: 6px 0 0">{{ formatDate(o.created_at) }}</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="bk-card bk-sum">
+          <h3>Items</h3>
+          @for (item of o.items; track item.id) {
+            <p class="bk-order__item" style="padding: 6px 0">
+              <span><b>{{ item.quantity }}×</b> {{ item.name }}</span>
+              <span>{{ formatPrice(item.price * item.quantity) }}</span>
+            </p>
+          }
+          <div style="margin-top: 10px">
+            <div class="bk-sum__row"><span>Subtotal</span><span>{{ formatPrice(o.subtotal) }}</span></div>
+            @if ((o.discount ?? 0) > 0) {
+              <div class="bk-sum__row">
+                <span>Discount @if (o.voucher_code) { ({{ o.voucher_code }}) }</span>
+                <span class="bk-sum__free">− {{ formatPrice(o.discount) }}</span>
+              </div>
+            }
+            <div class="bk-sum__row">
+              <span>Delivery fee</span>
+              @if (o.delivery_fee === 0) { <span class="bk-sum__free">Free</span> } @else { <span>{{ formatPrice(o.delivery_fee) }}</span> }
+            </div>
+            <div class="bk-sum__row"><span>Tax (12%)</span><span>{{ formatPrice(o.tax) }}</span></div>
+            <div class="bk-sum__row bk-sum__row--total" style="margin-bottom: 0"><span>Total</span><span>{{ formatPrice(o.total) }}</span></div>
+          </div>
+        </section>
+
+        <section class="bk-card">
+          <h3>@if (o.fulfillment_type === 'pickup') { Pickup } @else { Delivery }</h3>
+          @if (o.fulfillment_type === 'pickup') {
+            <p class="receipt-value">In-store pickup at 123 Banawe St, Quezon City</p>
+            <p class="receipt-value">{{ o.customer_name }}, {{ o.phone }}</p>
+          } @else {
+            <p class="receipt-value">{{ o.customer_name }}, {{ o.phone }}</p>
+            <p class="receipt-value">{{ o.address }}</p>
+            @if (o.unit_notes) { <p class="receipt-value">Notes: {{ o.unit_notes }}</p> }
+            <p class="receipt-value">
+              {{ coordinates() }}
+              @if (mapUrl()) { <a [href]="mapUrl()" target="_blank" rel="noopener" class="receipt-link">View on map</a> }
+            </p>
+          }
+          <p class="receipt-value">
+            @if (o.scheduled_at) { Scheduled for {{ formatDate(o.scheduled_at) }} } @else { As soon as possible }
+          </p>
+
+          <div class="bk-kv" style="margin-top: 10px">
+            <span>Payment</span><span>{{ paymentLabel[o.payment_method] }}</span>
+          </div>
+          <div class="bk-kv">
+            <span>Status</span>
+            <span><span [class]="'status-badge status-badge--' + statusBadge[o.status]">{{ statusLabel[o.status] }}</span></span>
+          </div>
+        </section>
+
+        <p class="bk-muted" style="text-align: center; font-size: 0.875rem">Thank you for supporting Knead to Know. Baked with love.</p>
+      </div>
+
+      <div class="bk-row no-print" style="margin: 18px 0 8px">
+        <button type="button" class="bk-btn bk-btn--outline" style="flex: 1 1 180px" (click)="printReceipt()">Print or save as PDF</button>
+        <a class="bk-btn bk-btn--dark" style="flex: 1 1 180px" routerLink="/orders">Back to my orders</a>
+      </div>
+    }
+
+  </div>
+</ion-content>
